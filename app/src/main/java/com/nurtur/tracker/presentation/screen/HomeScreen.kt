@@ -47,7 +47,7 @@ private val timestampFormatter = DateTimeFormatter.ofPattern("MMM d, hh:mm a")
 fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: FeedUiState,
-    onSaveFeed: () -> Unit,
+    onSaveFeed: () -> Boolean,
     onDeleteFeed: (Long) -> Unit,
     onStartTimeChange: (Long) -> Unit,
     onEndTimeChange: (Long) -> Unit,
@@ -107,8 +107,10 @@ fun HomeScreen(
             uiState = uiState,
             onDismiss = { isDialogVisible = false },
             onSave = {
-                onSaveFeed()
-                isDialogVisible = false
+                val didSave = onSaveFeed()
+                if (didSave) {
+                    isDialogVisible = false
+                }
             },
             onStartTimeChange = onStartTimeChange,
             onEndTimeChange = onEndTimeChange,

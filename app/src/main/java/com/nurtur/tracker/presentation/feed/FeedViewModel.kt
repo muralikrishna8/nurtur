@@ -114,7 +114,7 @@ class FeedViewModel(
         }
     }
 
-    fun saveFeed() {
+    fun saveFeed(): Boolean {
         val current = uiState.value
         val startTime = current.startTimeMillis
         val endTime = current.endTimeMillis
@@ -122,15 +122,15 @@ class FeedViewModel(
         val consumed = current.amountConsumedInput.toIntOrNull()
         if (offered == null || consumed == null) {
             formState.update { it.copy(formError = "Please provide valid numeric values.") }
-            return
+            return false
         }
         if (startTime <= 0L || endTime <= 0L || endTime < startTime) {
             formState.update { it.copy(formError = "End time must be after start time.") }
-            return
+            return false
         }
         if (offered !in 1..1000 || consumed !in 0..offered) {
             formState.update { it.copy(formError = "Consumed must be between 0 and offered amount.") }
-            return
+            return false
         }
 
         viewModelScope.launch {
@@ -158,6 +158,7 @@ class FeedViewModel(
                 )
             }
         }
+        return true
     }
 
     fun deleteFeed(id: Long) {
