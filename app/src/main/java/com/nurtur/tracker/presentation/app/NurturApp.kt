@@ -1,4 +1,4 @@
-package com.nurtur.tracker.ui
+package com.nurtur.tracker.presentation.app
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -17,10 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nurtur.tracker.ui.screens.AnalyticsScreen
-import com.nurtur.tracker.ui.screens.HomeScreen
-import com.nurtur.tracker.ui.screens.SettingsScreen
-import com.nurtur.tracker.ui.viewmodel.FeedViewModel
+import com.nurtur.tracker.presentation.feed.FeedViewModel
+import com.nurtur.tracker.presentation.screen.AnalyticsScreen
+import com.nurtur.tracker.presentation.screen.HomeScreen
+import com.nurtur.tracker.presentation.screen.SettingsScreen
 
 enum class NurturTab(val label: String) {
     Home("Home"),
@@ -63,8 +63,8 @@ fun NurturApp(viewModel: FeedViewModel) {
                 uiState = uiState,
                 onSaveFeed = { viewModel.saveFeed() },
                 onDeleteFeed = { viewModel.deleteFeed(it) },
-                onStartTimeChange = viewModel::updateStartTime,
-                onEndTimeChange = viewModel::updateEndTime,
+                onStartTimeChange = viewModel::updateStartTimeMillis,
+                onEndTimeChange = viewModel::updateEndTimeMillis,
                 onAmountOfferedChange = viewModel::updateAmountOffered,
                 onAmountConsumedChange = viewModel::updateAmountConsumed,
                 onMilkTypeChange = viewModel::updateMilkType,

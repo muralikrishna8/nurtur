@@ -1,13 +1,13 @@
-package com.nurtur.tracker.ui.viewmodel
+package com.nurtur.tracker.presentation.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.nurtur.tracker.data.local.FeedLogEntity
-import com.nurtur.tracker.data.preferences.SettingsPreferences
-import com.nurtur.tracker.data.repository.FeedRepository
 import com.nurtur.tracker.domain.model.DailyAnalytics
+import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.model.SettingsState
+import com.nurtur.tracker.domain.repository.FeedRepository
+import com.nurtur.tracker.domain.repository.SettingsRepository
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,15 +24,15 @@ private const val DEFAULT_MILK_TYPE = "Formula"
 private const val DEFAULT_BOTTLE_SIZE_ML = 120
 
 data class FeedUiState(
-    val latestFeed: FeedLogEntity? = null,
+    val latestFeed: FeedLog? = null,
     val todayConsumedMl: Int = 0,
     val todayWastedMl: Int = 0,
     val todayFeedCount: Int = 0,
-    val recentFeeds: List<FeedLogEntity> = emptyList(),
+    val recentFeeds: List<FeedLog> = emptyList(),
     val sevenDaySummary: List<DailyAnalytics> = emptyList(),
     val settings: SettingsState = SettingsState(),
-    val startTimeInput: String = "",
-    val endTimeInput: String = "",
+    val startTimeMillis: Long = System.currentTimeMillis(),
+    val endTimeMillis: Long = System.currentTimeMillis(),
     val amountOfferedInput: String = DEFAULT_BOTTLE_SIZE_ML.toString(),
     val amountConsumedInput: String = "",
     val milkTypeInput: String = DEFAULT_MILK_TYPE,
@@ -42,19 +42,19 @@ data class FeedUiState(
 
 class FeedViewModel(
     private val repository: FeedRepository,
-    private val settingsPreferences: SettingsPreferences
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     private val formState = MutableStateFlow(
         FeedUiState(
-            startTimeInput = System.currentTimeMillis().toString(),
-            endTimeInput = System.currentTimeMillis().toString()
+            startTimeMillis = System.currentTimeMillis(),
+            endTimeMillis = System.currentTimeMillis()
         )
     )
 
     private val latestFeedFlow = repository.observeLatestFeed()
     private val recentFeedsFlow = repository.observeRecentFeeds(limit = 5)
     private val allFeedsFlow = repository.observeAllFeeds()
-    private val settingsFlow = settingsPreferences.settingsFlow
+    private val settingsFlow = settingsRepository.settingsFlow
 
     val uiState: StateFlow<FeedUiState> = combine(
         formState,
@@ -89,9 +89,9 @@ class FeedViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState())
 
-    fun updateStartTime(value: String) = formState.update { it.copy(startTimeInput = value) }
+    fun updateStartTimeMillis(value: Long) = formState.update { it.copy(startTimeMillis = value) }
 
-    fun updateEndTime(value: String) = formState.update { it.copy(endTimeInput = value) }
+    fun updateEndTimeMillis(value: Long) = formState.update { it.copy(endTimeMillis = value) }
 
     fun updateAmountOffered(value: String) = formState.update { it.copy(amountOfferedInput = value) }
 
@@ -104,23 +104,23 @@ class FeedViewModel(
     fun updateDefaultBottleSizeMl(value: String) {
         val parsed = value.toIntOrNull() ?: return
         viewModelScope.launch {
-            settingsPreferences.updateDefaultBottleSizeMl(parsed)
+            settingsRepository.updateDefaultBottleSizeMl(parsed)
         }
     }
 
     fun updateDefaultMilkType(value: String) {
         viewModelScope.launch {
-            settingsPreferences.updateDefaultMilkType(value)
+            settingsRepository.updateDefaultMilkType(value)
         }
     }
 
     fun saveFeed() {
         val current = uiState.value
-        val startTime = current.startTimeInput.toLongOrNull()
-        val endTime = current.endTimeInput.toLongOrNull()
+        val startTime = current.startTimeMillis
+        val endTime = current.endTimeMillis
         val offered = current.amountOfferedInput.toIntOrNull()
         val consumed = current.amountConsumedInput.toIntOrNull()
-        if (startTime == null || endTime == null || offered == null || consumed == null) {
+        if (offered == null || consumed == null) {
             formState.update { it.copy(formError = "Please provide valid numeric values.") }
             return
         }
@@ -135,7 +135,8 @@ class FeedViewModel(
 
         viewModelScope.launch {
             repository.insert(
-                FeedLogEntity(
+                FeedLog(
+                    id = 0L,
                     remoteId = null,
                     startTime = startTime,
                     endTime = endTime,
@@ -147,8 +148,8 @@ class FeedViewModel(
             )
             formState.update {
                 it.copy(
-                    startTimeInput = System.currentTimeMillis().toString(),
-                    endTimeInput = System.currentTimeMillis().toString(),
+                    startTimeMillis = System.currentTimeMillis(),
+                    endTimeMillis = System.currentTimeMillis(),
                     amountOfferedInput = uiState.value.settings.defaultBottleSizeMl.toString(),
                     amountConsumedInput = "",
                     milkTypeInput = uiState.value.settings.defaultMilkType,
@@ -172,12 +173,12 @@ class FeedViewModel(
 
     class Factory(
         private val repository: FeedRepository,
-        private val settingsPreferences: SettingsPreferences
+        private val settingsRepository: SettingsRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
-                return FeedViewModel(repository, settingsPreferences) as T
+                return FeedViewModel(repository, settingsRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

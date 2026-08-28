@@ -1,4 +1,4 @@
-package com.nurtur.tracker.ui.screens
+package com.nurtur.tracker.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

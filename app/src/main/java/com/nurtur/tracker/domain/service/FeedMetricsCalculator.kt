@@ -1,7 +1,7 @@
 package com.nurtur.tracker.domain.service
 
-import com.nurtur.tracker.data.local.FeedLogEntity
 import com.nurtur.tracker.domain.model.DailyAnalytics
+import com.nurtur.tracker.domain.model.FeedLog
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -15,7 +15,7 @@ object FeedMetricsCalculator {
     }
 
     fun buildSevenDaySummary(
-        feeds: List<FeedLogEntity>,
+        feeds: List<FeedLog>,
         zoneId: ZoneId = ZoneId.systemDefault()
     ): List<DailyAnalytics> {
         val grouped = feeds.groupBy { feed ->

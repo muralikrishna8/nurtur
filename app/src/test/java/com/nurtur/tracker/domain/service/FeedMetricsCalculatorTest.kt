@@ -1,6 +1,6 @@
 package com.nurtur.tracker.domain.service
 
-import com.nurtur.tracker.data.local.FeedLogEntity
+import com.nurtur.tracker.domain.model.FeedLog
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -25,7 +25,7 @@ class FeedMetricsCalculatorTest {
         val today = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
         val yesterday = LocalDate.now(zone).minusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
         val feeds = listOf(
-            FeedLogEntity(
+            FeedLog(
                 id = 1,
                 remoteId = null,
                 startTime = today + 1_000,
@@ -35,7 +35,7 @@ class FeedMetricsCalculatorTest {
                 milkType = "Formula",
                 notes = null
             ),
-            FeedLogEntity(
+            FeedLog(
                 id = 2,
                 remoteId = null,
                 startTime = yesterday + 2_000,

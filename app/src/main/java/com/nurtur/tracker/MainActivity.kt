@@ -6,12 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.room.Room
-import com.nurtur.tracker.data.local.AppDatabase
-import com.nurtur.tracker.data.preferences.SettingsPreferences
-import com.nurtur.tracker.data.repository.LocalFeedRepository
-import com.nurtur.tracker.ui.NurturApp
-import com.nurtur.tracker.ui.theme.NurturTheme
-import com.nurtur.tracker.ui.viewmodel.FeedViewModel
+import com.nurtur.tracker.infrastructure.persistence.room.AppDatabase
+import com.nurtur.tracker.infrastructure.preferences.DataStoreSettingsRepository
+import com.nurtur.tracker.infrastructure.repository.LocalFeedRepository
+import com.nurtur.tracker.presentation.app.NurturApp
+import com.nurtur.tracker.presentation.feed.FeedViewModel
+import com.nurtur.tracker.presentation.theme.NurturTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: FeedViewModel by viewModels {
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         ).build()
         FeedViewModel.Factory(
             repository = LocalFeedRepository(database.feedDao()),
-            settingsPreferences = SettingsPreferences(applicationContext)
+            settingsRepository = DataStoreSettingsRepository(applicationContext)
         )
     }
 

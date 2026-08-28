@@ -1,4 +1,4 @@
-package com.nurtur.tracker.ui.screens
+package com.nurtur.tracker.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
@@ -30,9 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nurtur.tracker.data.local.FeedLogEntity
+import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
-import com.nurtur.tracker.ui.viewmodel.FeedUiState
+import com.nurtur.tracker.presentation.feed.FeedUiState
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -49,8 +49,8 @@ fun HomeScreen(
     uiState: FeedUiState,
     onSaveFeed: () -> Unit,
     onDeleteFeed: (Long) -> Unit,
-    onStartTimeChange: (String) -> Unit,
-    onEndTimeChange: (String) -> Unit,
+    onStartTimeChange: (Long) -> Unit,
+    onEndTimeChange: (Long) -> Unit,
     onAmountOfferedChange: (String) -> Unit,
     onAmountConsumedChange: (String) -> Unit,
     onMilkTypeChange: (String) -> Unit,
@@ -121,7 +121,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HeroSection(currentTime: Long, latestFeed: FeedLogEntity?) {
+private fun HeroSection(currentTime: Long, latestFeed: FeedLog?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Time since last feed", style = MaterialTheme.typography.titleMedium)
@@ -164,7 +164,7 @@ private fun SnapshotSection(uiState: FeedUiState) {
 }
 
 @Composable
-private fun FeedRow(feed: FeedLogEntity) {
+private fun FeedRow(feed: FeedLog) {
     val endTimeText = timestampFormatter.format(Instant.ofEpochMilli(feed.endTime).atZone(ZoneId.systemDefault()))
     val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
     Card(modifier = Modifier.fillMaxWidth()) {

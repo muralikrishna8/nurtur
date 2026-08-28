@@ -1,4 +1,4 @@
-package com.nurtur.tracker.data.local
+package com.nurtur.tracker.infrastructure.persistence.room
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
