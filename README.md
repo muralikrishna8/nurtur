@@ -1,5 +1,7 @@
 # Nurtur (FeedTracker)
 
+![Nurtur logo](docs/assets/nurtur-logo-320.png)
+
 Nurtur is an Android baby feeding tracker that helps parents quickly log feeds, monitor milk intake and waste, and review trends over time.
 
 ## Context

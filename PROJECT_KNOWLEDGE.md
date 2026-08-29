@@ -122,6 +122,27 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Existing unit tests pass; no domain behavior changed in this iteration.
 
+### App Logo Branding Update
+
+- Requirement requested:
+  - Replace the app logo using the provided high-resolution `nurtur-logo.png` and include the logo in project documentation.
+- What changed:
+  - Generated Android launcher icon assets from the source logo for all standard densities:
+    - `mipmap-mdpi` (`48x48`)
+    - `mipmap-hdpi` (`72x72`)
+    - `mipmap-xhdpi` (`96x96`)
+    - `mipmap-xxhdpi` (`144x144`)
+    - `mipmap-xxxhdpi` (`192x192`)
+  - Added both `ic_launcher.png` and `ic_launcher_round.png` in each density folder.
+  - Updated `AndroidManifest.xml` to set `android:icon` and `android:roundIcon` explicitly to the generated launcher assets.
+  - Added a documentation-sized logo asset at `docs/assets/nurtur-logo-320.png` and embedded it in `README.md`.
+- Constraints/validation rules:
+  - Launcher icon naming follows Android resource conventions (`ic_launcher`, `ic_launcher_round`) to ensure deterministic packaging.
+  - Documentation uses a resized asset to avoid loading the original multi-megabyte image in README render paths.
+- Testing impact:
+  - No domain or validation logic changed.
+  - Recommended verification is visual: confirm launcher icon renders on emulator/device and README logo displays correctly.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
