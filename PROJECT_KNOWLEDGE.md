@@ -65,6 +65,12 @@ This file is the working knowledge base for future prompts in this repository. U
 - Edit mode includes an explicit delete action in the popup for record removal.
 - Existing validation rules remain enforced before update save.
 
+### Amount Offered Input UX Fix
+
+- Removed reactive auto-defaulting of `amountOfferedInput` while typing.
+- Default bottle size is now applied only when starting a fresh new-entry flow, not during manual field edits.
+- This prevents cleared input from being re-appended (for example `90` turning into `90120`).
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

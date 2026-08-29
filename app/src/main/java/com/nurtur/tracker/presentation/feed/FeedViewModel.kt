@@ -79,17 +79,7 @@ class FeedViewModel(
             todayFeedCount = todaysFeeds.size,
             recentFeeds = recentFeeds,
             sevenDaySummary = FeedMetricsCalculator.buildSevenDaySummary(allFeeds),
-            settings = settings,
-            amountOfferedInput = if (form.amountOfferedInput.isBlank()) {
-                settings.defaultBottleSizeMl.toString()
-            } else {
-                form.amountOfferedInput
-            },
-            milkTypeInput = if (form.milkTypeInput.isBlank()) {
-                settings.defaultMilkType
-            } else {
-                form.milkTypeInput
-            }
+            settings = settings
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState())
 
