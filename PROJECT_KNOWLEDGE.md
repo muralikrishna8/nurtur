@@ -143,6 +143,23 @@ This file is the working knowledge base for future prompts in this repository. U
   - No domain or validation logic changed.
   - Recommended verification is visual: confirm launcher icon renders on emulator/device and README logo displays correctly.
 
+### Adaptive Dark Theme with Manual Override
+
+- Requirement requested:
+  - Support dark theme automatically based on OS preference and allow users to switch between light and dark themes in Settings.
+- What changed:
+  - Added a new domain-level theme preference enum: `ThemeMode` with `SYSTEM`, `LIGHT`, and `DARK`.
+  - Extended `SettingsState` with persisted `themeMode`.
+  - Extended `SettingsRepository` and `DataStoreSettingsRepository` to store and update `theme_mode` via DataStore.
+  - Updated app composition so `NurturTheme` is driven by `settings.themeMode`.
+  - Added settings UI control to choose theme mode from `System`, `Light`, and `Dark`.
+  - Added deterministic resolver logic so `SYSTEM` maps to current OS dark preference and explicit modes always override it.
+- Constraints/validation rules:
+  - Stored theme values are enum-name based; invalid or unknown stored values safely fall back to `SYSTEM`.
+  - Settings UI only emits constrained enum options rather than free-form input.
+- Testing impact:
+  - Added `ThemeResolverTest` to verify all theme resolution branches (`SYSTEM`, `LIGHT`, `DARK`) and OS preference behavior.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

@@ -11,7 +11,6 @@ import com.nurtur.tracker.infrastructure.preferences.DataStoreSettingsRepository
 import com.nurtur.tracker.infrastructure.repository.LocalFeedRepository
 import com.nurtur.tracker.presentation.app.NurturApp
 import com.nurtur.tracker.presentation.feed.FeedViewModel
-import com.nurtur.tracker.presentation.theme.NurturTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: FeedViewModel by viewModels {
@@ -30,9 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NurturTheme {
-                NurturApp(viewModel = viewModel)
-            }
+            NurturApp(viewModel = viewModel)
         }
     }
 }

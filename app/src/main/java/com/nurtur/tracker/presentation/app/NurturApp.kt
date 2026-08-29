@@ -21,6 +21,7 @@ import com.nurtur.tracker.presentation.feed.FeedViewModel
 import com.nurtur.tracker.presentation.screen.AnalyticsScreen
 import com.nurtur.tracker.presentation.screen.HomeScreen
 import com.nurtur.tracker.presentation.screen.SettingsScreen
+import com.nurtur.tracker.presentation.theme.NurturTheme
 
 enum class NurturTab(val label: String) {
     Home("Home"),
@@ -33,59 +34,62 @@ fun NurturApp(viewModel: FeedViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(NurturTab.Home) }
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == NurturTab.Home,
-                    onClick = { selectedTab = NurturTab.Home },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text(NurturTab.Home.label) }
+    NurturTheme(themeMode = uiState.settings.themeMode) {
+        Scaffold(
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedTab == NurturTab.Home,
+                        onClick = { selectedTab = NurturTab.Home },
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text(NurturTab.Home.label) }
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == NurturTab.Analytics,
+                        onClick = { selectedTab = NurturTab.Analytics },
+                        icon = { Icon(Icons.Default.BarChart, contentDescription = "Analytics") },
+                        label = { Text(NurturTab.Analytics.label) }
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == NurturTab.Settings,
+                        onClick = { selectedTab = NurturTab.Settings },
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                        label = { Text(NurturTab.Settings.label) }
+                    )
+                }
+            }
+        ) { paddingValues ->
+            when (selectedTab) {
+                NurturTab.Home -> HomeScreen(
+                    modifier = Modifier.padding(paddingValues),
+                    uiState = uiState,
+                    onStartAddFeed = viewModel::startNewFeedEntry,
+                    onSaveFeed = viewModel::saveFeed,
+                    onDeleteFromEditor = viewModel::deleteEditingFeed,
+                    onDeleteFeed = { viewModel.deleteFeed(it) },
+                    onEditFeed = viewModel::startEditingFeed,
+                    onStartTimeChange = viewModel::updateStartTimeMillis,
+                    onEndTimeChange = viewModel::updateEndTimeMillis,
+                    onAmountOfferedChange = viewModel::updateAmountOffered,
+                    onAmountConsumedChange = viewModel::updateAmountConsumed,
+                    onMilkTypeChange = viewModel::updateMilkType,
+                    onNotesChange = viewModel::updateNotes
                 )
-                NavigationBarItem(
-                    selected = selectedTab == NurturTab.Analytics,
-                    onClick = { selectedTab = NurturTab.Analytics },
-                    icon = { Icon(Icons.Default.BarChart, contentDescription = "Analytics") },
-                    label = { Text(NurturTab.Analytics.label) }
+
+                NurturTab.Analytics -> AnalyticsScreen(
+                    modifier = Modifier.padding(paddingValues),
+                    analytics = uiState.sevenDaySummary
                 )
-                NavigationBarItem(
-                    selected = selectedTab == NurturTab.Settings,
-                    onClick = { selectedTab = NurturTab.Settings },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text(NurturTab.Settings.label) }
+
+                NurturTab.Settings -> SettingsScreen(
+                    modifier = Modifier.padding(paddingValues),
+                    settingsState = uiState.settings,
+                    onDefaultBottleSizeChange = viewModel::updateDefaultBottleSizeMl,
+                    onDefaultMilkTypeChange = viewModel::updateDefaultMilkType,
+                    onTargetFeedIntervalHoursChange = viewModel::updateTargetFeedIntervalHours,
+                    onThemeModeChange = { selectedMode -> viewModel.updateThemeMode(selectedMode) }
                 )
             }
-        }
-    ) { paddingValues ->
-        when (selectedTab) {
-            NurturTab.Home -> HomeScreen(
-                modifier = Modifier.padding(paddingValues),
-                uiState = uiState,
-                onStartAddFeed = viewModel::startNewFeedEntry,
-                onSaveFeed = viewModel::saveFeed,
-                onDeleteFromEditor = viewModel::deleteEditingFeed,
-                onDeleteFeed = { viewModel.deleteFeed(it) },
-                onEditFeed = viewModel::startEditingFeed,
-                onStartTimeChange = viewModel::updateStartTimeMillis,
-                onEndTimeChange = viewModel::updateEndTimeMillis,
-                onAmountOfferedChange = viewModel::updateAmountOffered,
-                onAmountConsumedChange = viewModel::updateAmountConsumed,
-                onMilkTypeChange = viewModel::updateMilkType,
-                onNotesChange = viewModel::updateNotes
-            )
-
-            NurturTab.Analytics -> AnalyticsScreen(
-                modifier = Modifier.padding(paddingValues),
-                analytics = uiState.sevenDaySummary
-            )
-
-            NurturTab.Settings -> SettingsScreen(
-                modifier = Modifier.padding(paddingValues),
-                settingsState = uiState.settings,
-                onDefaultBottleSizeChange = viewModel::updateDefaultBottleSizeMl,
-                onDefaultMilkTypeChange = viewModel::updateDefaultMilkType,
-                onTargetFeedIntervalHoursChange = viewModel::updateTargetFeedIntervalHours
-            )
         }
     }
 }

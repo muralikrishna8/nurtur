@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.nurtur.tracker.domain.model.SettingsState
+import com.nurtur.tracker.domain.model.ThemeMode
 import com.nurtur.tracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,13 +18,15 @@ class DataStoreSettingsRepository(private val context: Context) : SettingsReposi
         val defaultBottleSizeMl = intPreferencesKey("default_bottle_size_ml")
         val defaultMilkType = stringPreferencesKey("default_milk_type")
         val targetFeedIntervalMinutes = intPreferencesKey("target_feed_interval_minutes")
+        val themeMode = stringPreferencesKey("theme_mode")
     }
 
     override val settingsFlow: Flow<SettingsState> = context.dataStore.data.map { preferences ->
         SettingsState(
             defaultBottleSizeMl = preferences[Keys.defaultBottleSizeMl] ?: 120,
             defaultMilkType = preferences[Keys.defaultMilkType] ?: "Formula",
-            targetFeedIntervalMinutes = preferences[Keys.targetFeedIntervalMinutes] ?: 180
+            targetFeedIntervalMinutes = preferences[Keys.targetFeedIntervalMinutes] ?: 180,
+            themeMode = ThemeMode.fromStoredValue(preferences[Keys.themeMode])
         )
     }
 
@@ -42,6 +45,12 @@ class DataStoreSettingsRepository(private val context: Context) : SettingsReposi
     override suspend fun updateTargetFeedIntervalMinutes(value: Int) {
         context.dataStore.edit { preferences ->
             preferences[Keys.targetFeedIntervalMinutes] = value.coerceIn(30, 720)
+        }
+    }
+
+    override suspend fun updateThemeMode(value: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.themeMode] = value.name
         }
     }
 }

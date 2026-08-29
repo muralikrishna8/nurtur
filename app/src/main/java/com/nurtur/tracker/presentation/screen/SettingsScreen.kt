@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.SettingsState
+import com.nurtur.tracker.domain.model.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,9 +31,11 @@ fun SettingsScreen(
     settingsState: SettingsState,
     onDefaultBottleSizeChange: (String) -> Unit,
     onDefaultMilkTypeChange: (String) -> Unit,
-    onTargetFeedIntervalHoursChange: (String) -> Unit
+    onTargetFeedIntervalHoursChange: (String) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit
 ) {
     var isMilkTypeMenuExpanded by remember { mutableStateOf(false) }
+    var isThemeMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -84,5 +87,43 @@ fun SettingsScreen(
                 }
             }
         }
+
+        ExposedDropdownMenuBox(
+            expanded = isThemeMenuExpanded,
+            onExpandedChange = { isThemeMenuExpanded = it }
+        ) {
+            OutlinedTextField(
+                value = settingsState.themeMode.toDisplayLabel(),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Theme") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isThemeMenuExpanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = isThemeMenuExpanded,
+                onDismissRequest = { isThemeMenuExpanded = false }
+            ) {
+                ThemeMode.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.toDisplayLabel()) },
+                        onClick = {
+                            onThemeModeChange(option)
+                            isThemeMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun ThemeMode.toDisplayLabel(): String {
+    return when (this) {
+        ThemeMode.SYSTEM -> "System"
+        ThemeMode.LIGHT -> "Light"
+        ThemeMode.DARK -> "Dark"
     }
 }

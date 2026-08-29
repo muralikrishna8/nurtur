@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nurtur.tracker.domain.model.DailyAnalytics
 import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.model.SettingsState
+import com.nurtur.tracker.domain.model.ThemeMode
 import com.nurtur.tracker.domain.repository.FeedRepository
 import com.nurtur.tracker.domain.repository.SettingsRepository
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
@@ -150,6 +151,12 @@ class FeedViewModel(
         }
         viewModelScope.launch {
             settingsRepository.updateTargetFeedIntervalMinutes(parsedHours * MINUTES_PER_HOUR)
+        }
+    }
+
+    fun updateThemeMode(value: ThemeMode) {
+        viewModelScope.launch {
+            settingsRepository.updateThemeMode(value)
         }
     }
 
