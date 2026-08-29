@@ -89,6 +89,39 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Added unit tests for timer status threshold transitions in `FeedTimerStatusCalculatorTest`.
 
+### Consumed vs. Wasted Milk Analytics Chart
+
+- Requirement requested:
+  - Show a stacked 7-day chart for daily consumed vs wasted milk and allow tap-to-view exact daily breakdown.
+- What changed:
+  - Replaced the Analytics list view with a stacked bar chart UI in `AnalyticsScreen`.
+  - Added consumed (solid primary color) and wasted (lighter primary tint) stacked sections per day.
+  - Added bar tap interaction to show selected-day breakdown text (`Consumed Xml, Wasted Yml`).
+  - Changed 7-day aggregation behavior to always include a fixed timeline of the last 7 calendar days.
+  - Days without feeds now remain in the dataset and render as empty bar slots to preserve visual continuity.
+- Constraints/validation rules:
+  - Waste remains derived as `max(amountOffered - amountConsumed, 0)` to avoid negative values.
+  - Aggregation uses local device timezone date boundaries and includes today plus previous 6 days.
+- Testing impact:
+  - Updated and expanded `FeedMetricsCalculatorTest` to verify:
+    - seven-day fixed-size output,
+    - zero-feed day preservation,
+    - empty input behavior returning seven empty days.
+
+### Analytics Axis and Gridline Readability
+
+- Requirement requested:
+  - Add a visible Y-axis and dotted horizontal guide lines so ml levels are easier to read from the stacked chart.
+- What changed:
+  - Added Y-axis labels (`0ml` to dynamic max) on the left side of the analytics chart.
+  - Added dashed horizontal grid lines across the chart area, parallel to the X-axis.
+  - Y-axis max now rounds up to the nearest 50ml step so ticks stay stable and readable.
+- Constraints/validation rules:
+  - Axis max has a safe minimum of `50ml` to prevent degenerate scale rendering on no-data weeks.
+  - Guide lines and ticks use a fixed 4-segment scale for consistent visual interpretation.
+- Testing impact:
+  - Existing unit tests pass; no domain behavior changed in this iteration.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

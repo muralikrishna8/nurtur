@@ -3,6 +3,7 @@ package com.nurtur.tracker.domain.service
 import com.nurtur.tracker.domain.model.DailyAnalytics
 import com.nurtur.tracker.domain.model.FeedLog
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -21,20 +22,20 @@ object FeedMetricsCalculator {
         val grouped = feeds.groupBy { feed ->
             Instant.ofEpochMilli(feed.endTime).atZone(zoneId).toLocalDate()
         }
-        return grouped.entries
-            .sortedByDescending { it.key }
-            .take(7)
-            .map { (date, dayFeeds) ->
-                val consumed = dayFeeds.sumOf { it.amountConsumed.coerceAtLeast(0) }
-                val wasted = dayFeeds.sumOf {
-                    calculateWasteMl(it.amountOffered, it.amountConsumed)
-                }
-                DailyAnalytics(
-                    dayLabel = dayFormatter.format(date),
-                    consumedMl = consumed,
-                    wastedMl = wasted,
-                    feedCount = dayFeeds.size
-                )
+        val today = LocalDate.now(zoneId)
+        return (0L..6L).map { dayOffset ->
+            val date = today.minusDays(dayOffset)
+            val dayFeeds = grouped[date].orEmpty()
+            val consumed = dayFeeds.sumOf { it.amountConsumed.coerceAtLeast(0) }
+            val wasted = dayFeeds.sumOf {
+                calculateWasteMl(it.amountOffered, it.amountConsumed)
             }
+            DailyAnalytics(
+                dayLabel = dayFormatter.format(date),
+                consumedMl = consumed,
+                wastedMl = wasted,
+                feedCount = dayFeeds.size
+            )
+        }
     }
 }
