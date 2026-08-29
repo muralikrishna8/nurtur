@@ -58,6 +58,13 @@ This file is the working knowledge base for future prompts in this repository. U
 
 - Log popup now stays open on validation failures (including missing `amountConsumed`).
 
+### Feed Log Editing and Deletion
+
+- Users can tap a recent feed row to open the form in edit mode with prefilled values.
+- Edit mode supports updating incorrect log values and saving them back to the same record ID.
+- Edit mode includes an explicit delete action in the popup for record removal.
+- Existing validation rules remain enforced before update save.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

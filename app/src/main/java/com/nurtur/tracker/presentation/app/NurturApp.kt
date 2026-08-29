@@ -61,8 +61,11 @@ fun NurturApp(viewModel: FeedViewModel) {
             NurturTab.Home -> HomeScreen(
                 modifier = Modifier.padding(paddingValues),
                 uiState = uiState,
+                onStartAddFeed = viewModel::startNewFeedEntry,
                 onSaveFeed = viewModel::saveFeed,
+                onDeleteFromEditor = viewModel::deleteEditingFeed,
                 onDeleteFeed = { viewModel.deleteFeed(it) },
+                onEditFeed = viewModel::startEditingFeed,
                 onStartTimeChange = viewModel::updateStartTimeMillis,
                 onEndTimeChange = viewModel::updateEndTimeMillis,
                 onAmountOfferedChange = viewModel::updateAmountOffered,

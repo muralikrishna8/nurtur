@@ -38,6 +38,7 @@ gradle :app:assembleDebug
   - Time since last feed hero section
   - Today snapshot (consumed ml, wasted ml, feed count)
   - Recent feed activity list (latest 5)
+  - Tap any recent entry to edit it
   - Swipe-to-delete feed entries
 - Log Feed popup with:
   - Date/time pickers for start and end time
@@ -45,6 +46,7 @@ gradle :app:assembleDebug
   - Dynamic wasted milk calculation
   - Milk type selection (Formula/Breastmilk)
   - Optional notes
+  - Edit mode with Update and Delete actions
   - Validation that keeps popup open on invalid input
 - Analytics tab:
   - Last 7 days grouped summary (consumed, wasted, feed count)

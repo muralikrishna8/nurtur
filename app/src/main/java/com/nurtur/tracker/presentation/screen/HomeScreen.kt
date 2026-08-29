@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,8 +48,11 @@ private val timestampFormatter = DateTimeFormatter.ofPattern("MMM d, hh:mm a")
 fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: FeedUiState,
+    onStartAddFeed: () -> Unit,
     onSaveFeed: () -> Boolean,
+    onDeleteFromEditor: () -> Boolean,
     onDeleteFeed: (Long) -> Unit,
+    onEditFeed: (FeedLog) -> Unit,
     onStartTimeChange: (Long) -> Unit,
     onEndTimeChange: (Long) -> Unit,
     onAmountOfferedChange: (String) -> Unit,
@@ -68,7 +72,10 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
-            FloatingActionButton(onClick = { isDialogVisible = true }) {
+            FloatingActionButton(onClick = {
+                onStartAddFeed()
+                isDialogVisible = true
+            }) {
                 Text("+")
             }
         }
@@ -95,7 +102,15 @@ fun HomeScreen(
                     SwipeToDismissBox(
                         state = dismissState,
                         backgroundContent = {},
-                        content = { FeedRow(feed = feed) }
+                        content = {
+                            FeedRow(
+                                feed = feed,
+                                onClick = {
+                                    onEditFeed(feed)
+                                    isDialogVisible = true
+                                }
+                            )
+                        }
                     )
                 }
             }
@@ -109,6 +124,12 @@ fun HomeScreen(
             onSave = {
                 val didSave = onSaveFeed()
                 if (didSave) {
+                    isDialogVisible = false
+                }
+            },
+            onDelete = {
+                val didDelete = onDeleteFromEditor()
+                if (didDelete) {
                     isDialogVisible = false
                 }
             },
@@ -166,13 +187,14 @@ private fun SnapshotSection(uiState: FeedUiState) {
 }
 
 @Composable
-private fun FeedRow(feed: FeedLog) {
+private fun FeedRow(feed: FeedLog, onClick: () -> Unit) {
     val endTimeText = timestampFormatter.format(Instant.ofEpochMilli(feed.endTime).atZone(ZoneId.systemDefault()))
     val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable { onClick() }
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

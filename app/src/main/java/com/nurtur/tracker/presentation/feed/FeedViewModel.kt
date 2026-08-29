@@ -37,8 +37,12 @@ data class FeedUiState(
     val amountConsumedInput: String = "",
     val milkTypeInput: String = DEFAULT_MILK_TYPE,
     val notesInput: String = "",
+    val editingFeedId: Long? = null,
     val formError: String? = null
-)
+) {
+    val isEditMode: Boolean
+        get() = editingFeedId != null
+}
 
 class FeedViewModel(
     private val repository: FeedRepository,
@@ -101,6 +105,38 @@ class FeedViewModel(
 
     fun updateNotes(value: String) = formState.update { it.copy(notesInput = value.take(280)) }
 
+    fun startNewFeedEntry() {
+        val now = System.currentTimeMillis()
+        val settings = uiState.value.settings
+        formState.update {
+            it.copy(
+                startTimeMillis = now,
+                endTimeMillis = now,
+                amountOfferedInput = settings.defaultBottleSizeMl.toString(),
+                amountConsumedInput = "",
+                milkTypeInput = settings.defaultMilkType,
+                notesInput = "",
+                editingFeedId = null,
+                formError = null
+            )
+        }
+    }
+
+    fun startEditingFeed(feedLog: FeedLog) {
+        formState.update {
+            it.copy(
+                startTimeMillis = feedLog.startTime,
+                endTimeMillis = feedLog.endTime,
+                amountOfferedInput = feedLog.amountOffered.toString(),
+                amountConsumedInput = feedLog.amountConsumed.toString(),
+                milkTypeInput = feedLog.milkType,
+                notesInput = feedLog.notes.orEmpty(),
+                editingFeedId = feedLog.id,
+                formError = null
+            )
+        }
+    }
+
     fun updateDefaultBottleSizeMl(value: String) {
         val parsed = value.toIntOrNull() ?: return
         viewModelScope.launch {
@@ -134,9 +170,10 @@ class FeedViewModel(
         }
 
         viewModelScope.launch {
+            val targetId = current.editingFeedId ?: 0L
             repository.insert(
                 FeedLog(
-                    id = 0L,
+                    id = targetId,
                     remoteId = null,
                     startTime = startTime,
                     endTime = endTime,
@@ -154,9 +191,19 @@ class FeedViewModel(
                     amountConsumedInput = "",
                     milkTypeInput = uiState.value.settings.defaultMilkType,
                     notesInput = "",
+                    editingFeedId = null,
                     formError = null
                 )
             }
+        }
+        return true
+    }
+
+    fun deleteEditingFeed(): Boolean {
+        val feedId = uiState.value.editingFeedId ?: return false
+        viewModelScope.launch {
+            repository.deleteById(feedId)
+            startNewFeedEntry()
         }
         return true
     }

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,6 +40,7 @@ fun LogFeedDialog(
     uiState: FeedUiState,
     onDismiss: () -> Unit,
     onSave: () -> Unit,
+    onDelete: () -> Unit,
     onStartTimeChange: (Long) -> Unit,
     onEndTimeChange: (Long) -> Unit,
     onAmountOfferedChange: (String) -> Unit,
@@ -61,7 +63,7 @@ fun LogFeedDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Log Feed") },
+        title = { Text(if (uiState.isEditMode) "Edit Feed" else "Log Feed") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -155,12 +157,23 @@ fun LogFeedDialog(
         },
         confirmButton = {
             Button(onClick = onSave) {
-                Text("Save")
+                Text(if (uiState.isEditMode) "Update" else "Save")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            if (uiState.isEditMode) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDelete) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
             }
         },
         modifier = Modifier.padding(8.dp)
