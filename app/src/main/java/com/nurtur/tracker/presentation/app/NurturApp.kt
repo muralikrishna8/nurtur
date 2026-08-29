@@ -78,7 +78,8 @@ fun NurturApp(viewModel: FeedViewModel) {
 
                 NurturTab.Analytics -> AnalyticsScreen(
                     modifier = Modifier.padding(paddingValues),
-                    analytics = uiState.sevenDaySummary
+                    analytics = uiState.sevenDaySummary,
+                    insights = uiState.analyticsInsights
                 )
 
                 NurturTab.Settings -> SettingsScreen(

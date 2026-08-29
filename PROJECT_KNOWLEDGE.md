@@ -160,6 +160,32 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Added `ThemeResolverTest` to verify all theme resolution branches (`SYSTEM`, `LIGHT`, `DARK`) and OS preference behavior.
 
+### Averages and Intake Trendline Analytics
+
+- Requirement requested:
+  - Show average feed volume and average time between feeds, overlay an intake trendline on the daily chart, and hide derived insights when data is insufficient.
+- What changed:
+  - Added a new domain model `AnalyticsInsights` to carry average metrics and smoothed consumed-volume trend data.
+  - Added `FeedMetricsCalculator.buildAveragesAndTrend(...)` to compute:
+    - `Average Volume per Feed` from qualifying feeds only (`amountConsumed >= 10ml`).
+    - `Average Time Between Feeds` as the mean of `(next.startTime - previous.endTime)` across qualifying sequential feeds.
+    - A smoothed moving-average trend series for consumed daily volume over the active 7-day analytics window.
+  - Updated `FeedViewModel` to build analytics from the selected dashboard window (last 7 days) and expose `analyticsInsights`.
+  - Updated `AnalyticsScreen` to:
+    - render two summary text fields below the chart,
+    - format duration values for readability,
+    - overlay a smoothed trendline on top of the existing daily volume bars.
+  - Added insufficient-data behavior: when the selected window has fewer than 3 logged feeds, trendline is hidden and both averages display `--`.
+- Constraints/validation rules:
+  - Outlier filtering excludes feeds with `amountConsumed < 10ml` from average calculations.
+  - Interval duration is clamped to non-negative values to avoid invalid time gaps from malformed chronological inputs.
+  - Trendline rendering requires at least 3 points and is suppressed in low-sample windows to reduce misleading interpretation risk.
+- Testing impact:
+  - Expanded `FeedMetricsCalculatorTest` with coverage for:
+    - outlier exclusion impact on both averages,
+    - insufficient-data fallback state,
+    - all-feeds-under-threshold behavior for averages while preserving trend generation when feed count threshold is met.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

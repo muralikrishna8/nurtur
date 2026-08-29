@@ -26,11 +26,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.nurtur.tracker.domain.model.AnalyticsInsights
 import com.nurtur.tracker.domain.model.DailyAnalytics
+import java.util.Locale
 
 private const val BAR_SECTION_WEIGHT_SCALE = 1f
 private const val DAY_LABEL_LENGTH = 3
@@ -41,7 +45,8 @@ private val Y_AXIS_WIDTH: Dp = 44.dp
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
-    analytics: List<DailyAnalytics>
+    analytics: List<DailyAnalytics>,
+    insights: AnalyticsInsights
 ) {
     val chartData = analytics.take(7).asReversed()
     val maxDayTotalMl = chartData.maxOfOrNull { it.consumedMl + it.wastedMl } ?: 0
@@ -51,6 +56,8 @@ fun AnalyticsScreen(
         mutableIntStateOf(chartData.indexOfFirst { it.feedCount > 0 }.coerceAtLeast(0))
     }
     val selectedDay = chartData.getOrNull(selectedIndex)
+    val averageVolumeText = insights.averageVolumePerFeedMl?.let { "${it}ml" } ?: "--"
+    val averageIntervalText = insights.averageTimeBetweenFeedsMillis?.let { formatDuration(it) } ?: "--"
 
     Column(
         modifier = modifier
@@ -91,7 +98,7 @@ fun AnalyticsScreen(
                         }
                     }
 
-                    Row(
+                    Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -109,65 +116,105 @@ fun AnalyticsScreen(
                                     )
                                 }
                             }
-                            .padding(start = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Bottom
+                            .padding(start = 4.dp)
                     ) {
-                        chartData.forEachIndexed { index, day ->
-                            val dayTotal = day.consumedMl + day.wastedMl
-                            val barHeightRatio = if (dayTotal == 0) 0f else dayTotal.toFloat() / yAxisMaxMl.toFloat()
-                            val consumedRatio = if (dayTotal == 0) 0f else day.consumedMl.toFloat() / dayTotal.toFloat()
-                            val wastedRatio = if (dayTotal == 0) 0f else day.wastedMl.toFloat() / dayTotal.toFloat()
+                        val trendSeries = chartData.mapIndexedNotNull { index, _ ->
+                            insights.smoothedTrendConsumedMlByDay.getOrNull(index)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            chartData.forEachIndexed { index, day ->
+                                val dayTotal = day.consumedMl + day.wastedMl
+                                val barHeightRatio = if (dayTotal == 0) 0f else dayTotal.toFloat() / yAxisMaxMl.toFloat()
+                                val consumedRatio = if (dayTotal == 0) 0f else day.consumedMl.toFloat() / dayTotal.toFloat()
+                                val wastedRatio = if (dayTotal == 0) 0f else day.wastedMl.toFloat() / dayTotal.toFloat()
 
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                verticalArrangement = Arrangement.Bottom,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
+                                Column(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f),
-                                    contentAlignment = Alignment.BottomCenter
+                                        .weight(1f)
+                                        .fillMaxHeight(),
+                                    verticalArrangement = Arrangement.Bottom,
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    if (barHeightRatio > 0f) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth(0.7f)
-                                                .fillMaxHeight(barHeightRatio)
-                                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                                .clickable { selectedIndex = index }
-                                        ) {
-                                            if (wastedRatio > 0f) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(wastedRatio * BAR_SECTION_WEIGHT_SCALE)
-                                                        .fillMaxWidth()
-                                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-                                                )
-                                            }
-                                            if (consumedRatio > 0f) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(consumedRatio * BAR_SECTION_WEIGHT_SCALE)
-                                                        .fillMaxWidth()
-                                                        .background(MaterialTheme.colorScheme.primary)
-                                                )
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                        contentAlignment = Alignment.BottomCenter
+                                    ) {
+                                        if (barHeightRatio > 0f) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(0.7f)
+                                                    .fillMaxHeight(barHeightRatio)
+                                                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                                                    .clickable { selectedIndex = index }
+                                            ) {
+                                                if (wastedRatio > 0f) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(wastedRatio * BAR_SECTION_WEIGHT_SCALE)
+                                                            .fillMaxWidth()
+                                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                                                    )
+                                                }
+                                                if (consumedRatio > 0f) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(consumedRatio * BAR_SECTION_WEIGHT_SCALE)
+                                                            .fillMaxWidth()
+                                                            .background(MaterialTheme.colorScheme.primary)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
+                                    Text(
+                                        text = day.dayLabel.take(DAY_LABEL_LENGTH),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 6.dp)
+                                    )
                                 }
-                                Text(
-                                    text = day.dayLabel.take(DAY_LABEL_LENGTH),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 6.dp)
-                                )
                             }
+                        }
+                        if (trendSeries.size >= 3) {
+                            val trendColor: Color = MaterialTheme.colorScheme.tertiary
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .drawBehind {
+                                        val chartHeightPx = size.height - 24.dp.toPx()
+                                        if (chartHeightPx <= 0f) {
+                                            return@drawBehind
+                                        }
+                                        val barsCount = chartData.size.coerceAtLeast(1)
+                                        val spacingPx = 8.dp.toPx()
+                                        val barWidthPx =
+                                            (size.width - spacingPx * (barsCount - 1)).coerceAtLeast(0f) / barsCount.toFloat()
+                                        val path = Path()
+                                        trendSeries.forEachIndexed { index, value ->
+                                            val x = (barWidthPx * index) + (spacingPx * index) + (barWidthPx / 2f)
+                                            val ratio = (value / yAxisMaxMl.toFloat()).coerceIn(0f, 1f)
+                                            val y = chartHeightPx - (ratio * chartHeightPx)
+                                            if (index == 0) {
+                                                path.moveTo(x, y)
+                                            } else {
+                                                path.lineTo(x, y)
+                                            }
+                                        }
+                                        drawPath(
+                                            path = path,
+                                            color = trendColor,
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                        )
+                                    }
+                            )
                         }
                     }
                 }
@@ -177,6 +224,14 @@ fun AnalyticsScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Text(
+                    text = "Average Volume per Feed: $averageVolumeText",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Average Time Between Feeds: $averageIntervalText",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
@@ -188,4 +243,20 @@ private fun computeAxisMax(maxValueMl: Int): Int {
     }
     val roundedUp = ((maxValueMl + AXIS_STEP_ML - 1) / AXIS_STEP_ML) * AXIS_STEP_ML
     return roundedUp.coerceAtLeast(AXIS_STEP_ML)
+}
+
+private fun formatDuration(durationMillis: Long): String {
+    if (durationMillis <= 0L) {
+        return "0m"
+    }
+    val totalMinutes = durationMillis / 60_000L
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    if (hours == 0L) {
+        return "${minutes}m"
+    }
+    if (minutes == 0L) {
+        return "${hours}h"
+    }
+    return String.format(Locale.US, "%dh %02dm", hours, minutes)
 }

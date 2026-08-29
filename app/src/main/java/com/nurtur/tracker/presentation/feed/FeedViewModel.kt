@@ -3,6 +3,7 @@ package com.nurtur.tracker.presentation.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.nurtur.tracker.domain.model.AnalyticsInsights
 import com.nurtur.tracker.domain.model.DailyAnalytics
 import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.model.SettingsState
@@ -34,6 +35,11 @@ data class FeedUiState(
     val todayFeedCount: Int = 0,
     val recentFeeds: List<FeedLog> = emptyList(),
     val sevenDaySummary: List<DailyAnalytics> = emptyList(),
+    val analyticsInsights: AnalyticsInsights = AnalyticsInsights(
+        averageVolumePerFeedMl = null,
+        averageTimeBetweenFeedsMillis = null,
+        smoothedTrendConsumedMlByDay = emptyList()
+    ),
     val settings: SettingsState = SettingsState(),
     val startTimeMillis: Long = System.currentTimeMillis(),
     val endTimeMillis: Long = System.currentTimeMillis(),
@@ -71,6 +77,12 @@ class FeedViewModel(
         allFeedsFlow,
         settingsFlow
     ) { form, latestFeed, recentFeeds, allFeeds, settings ->
+        val zoneId = ZoneId.systemDefault()
+        val analyticsStartDate = LocalDate.now(zoneId).minusDays(6)
+        val analyticsWindowFeeds = allFeeds.filter { feed ->
+            val feedDate = Instant.ofEpochMilli(feed.endTime).atZone(zoneId).toLocalDate()
+            !feedDate.isBefore(analyticsStartDate)
+        }
         val todaysFeeds = allFeeds.filter { isToday(it.endTime) }
         val consumedToday = todaysFeeds.sumOf { it.amountConsumed.coerceAtLeast(0) }
         val wastedToday = todaysFeeds.sumOf {
@@ -82,7 +94,8 @@ class FeedViewModel(
             todayWastedMl = wastedToday,
             todayFeedCount = todaysFeeds.size,
             recentFeeds = recentFeeds,
-            sevenDaySummary = FeedMetricsCalculator.buildSevenDaySummary(allFeeds),
+            sevenDaySummary = FeedMetricsCalculator.buildSevenDaySummary(analyticsWindowFeeds, zoneId),
+            analyticsInsights = FeedMetricsCalculator.buildAveragesAndTrend(analyticsWindowFeeds, zoneId),
             settings = settings
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState())
