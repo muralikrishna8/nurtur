@@ -18,16 +18,21 @@ object FeedMetricsCalculator {
         return (amountOffered - amountConsumed).coerceAtLeast(0)
     }
 
-    fun buildSevenDaySummary(
+    fun buildDailySummary(
         feeds: List<FeedLog>,
+        startDate: LocalDate,
+        endDate: LocalDate,
         zoneId: ZoneId = ZoneId.systemDefault()
     ): List<DailyAnalytics> {
+        if (endDate.isBefore(startDate)) {
+            return emptyList()
+        }
         val grouped = feeds.groupBy { feed ->
             Instant.ofEpochMilli(feed.endTime).atZone(zoneId).toLocalDate()
         }
-        val today = LocalDate.now(zoneId)
-        return (0L..6L).map { dayOffset ->
-            val date = today.minusDays(dayOffset)
+        val totalDays = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate).toInt()
+        return (0..totalDays).map { dayOffset ->
+            val date = startDate.plusDays(dayOffset.toLong())
             val dayFeeds = grouped[date].orEmpty()
             val consumed = dayFeeds.sumOf { it.amountConsumed.coerceAtLeast(0) }
             val wasted = dayFeeds.sumOf {
@@ -42,8 +47,23 @@ object FeedMetricsCalculator {
         }
     }
 
+    fun buildSevenDaySummary(
+        feeds: List<FeedLog>,
+        zoneId: ZoneId = ZoneId.systemDefault()
+    ): List<DailyAnalytics> {
+        val today = LocalDate.now(zoneId)
+        return buildDailySummary(
+            feeds = feeds,
+            startDate = today.minusDays(6),
+            endDate = today,
+            zoneId = zoneId
+        ).asReversed()
+    }
+
     fun buildAveragesAndTrend(
         feeds: List<FeedLog>,
+        trendStartDate: LocalDate? = null,
+        trendEndDate: LocalDate? = null,
         zoneId: ZoneId = ZoneId.systemDefault()
     ): AnalyticsInsights {
         if (feeds.size < MIN_FEED_COUNT_FOR_INSIGHTS) {
@@ -71,9 +91,11 @@ object FeedMetricsCalculator {
             ?.average()
             ?.toLong()
 
-        val dailyConsumedSeries = buildSevenDaySummary(feeds, zoneId)
-            .asReversed()
-            .map { it.consumedMl.toFloat() }
+        val dailyConsumedSeries = if (trendStartDate != null && trendEndDate != null) {
+            buildDailySummary(feeds, trendStartDate, trendEndDate, zoneId).map { it.consumedMl.toFloat() }
+        } else {
+            buildSevenDaySummary(feeds, zoneId).asReversed().map { it.consumedMl.toFloat() }
+        }
 
         return AnalyticsInsights(
             averageVolumePerFeedMl = averageVolume,

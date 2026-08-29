@@ -27,6 +27,10 @@ private const val DEFAULT_BOTTLE_SIZE_ML = 120
 private const val MIN_TARGET_INTERVAL_HOURS = 1
 private const val MAX_TARGET_INTERVAL_HOURS = 12
 private const val MINUTES_PER_HOUR = 60
+private const val DEFAULT_ANALYTICS_WINDOW_DAYS = 7L
+private const val QUICK_FILTER_SEVEN_DAYS = 7L
+private const val QUICK_FILTER_FOURTEEN_DAYS = 14L
+private const val QUICK_FILTER_THIRTY_DAYS = 30L
 
 data class FeedUiState(
     val latestFeed: FeedLog? = null,
@@ -35,6 +39,9 @@ data class FeedUiState(
     val todayFeedCount: Int = 0,
     val recentFeeds: List<FeedLog> = emptyList(),
     val sevenDaySummary: List<DailyAnalytics> = emptyList(),
+    val analyticsStartDate: LocalDate = LocalDate.now().minusDays(DEFAULT_ANALYTICS_WINDOW_DAYS - 1),
+    val analyticsEndDate: LocalDate = LocalDate.now(),
+    val analyticsQuickFilterDays: Long = QUICK_FILTER_SEVEN_DAYS,
     val analyticsInsights: AnalyticsInsights = AnalyticsInsights(
         averageVolumePerFeedMl = null,
         averageTimeBetweenFeedsMillis = null,
@@ -58,6 +65,7 @@ class FeedViewModel(
     private val repository: FeedRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+    private val zoneId: ZoneId = ZoneId.systemDefault()
     private val formState = MutableStateFlow(
         FeedUiState(
             startTimeMillis = System.currentTimeMillis(),
@@ -77,11 +85,12 @@ class FeedViewModel(
         allFeedsFlow,
         settingsFlow
     ) { form, latestFeed, recentFeeds, allFeeds, settings ->
-        val zoneId = ZoneId.systemDefault()
-        val analyticsStartDate = LocalDate.now(zoneId).minusDays(6)
+        val today = LocalDate.now(zoneId)
+        val boundedStartDate = form.analyticsStartDate
+        val boundedEndDate = form.analyticsEndDate.coerceAtMost(today)
         val analyticsWindowFeeds = allFeeds.filter { feed ->
             val feedDate = Instant.ofEpochMilli(feed.endTime).atZone(zoneId).toLocalDate()
-            !feedDate.isBefore(analyticsStartDate)
+            !feedDate.isBefore(boundedStartDate) && !feedDate.isAfter(boundedEndDate)
         }
         val todaysFeeds = allFeeds.filter { isToday(it.endTime) }
         val consumedToday = todaysFeeds.sumOf { it.amountConsumed.coerceAtLeast(0) }
@@ -94,11 +103,54 @@ class FeedViewModel(
             todayWastedMl = wastedToday,
             todayFeedCount = todaysFeeds.size,
             recentFeeds = recentFeeds,
-            sevenDaySummary = FeedMetricsCalculator.buildSevenDaySummary(analyticsWindowFeeds, zoneId),
-            analyticsInsights = FeedMetricsCalculator.buildAveragesAndTrend(analyticsWindowFeeds, zoneId),
+            sevenDaySummary = FeedMetricsCalculator.buildDailySummary(
+                feeds = analyticsWindowFeeds,
+                startDate = boundedStartDate,
+                endDate = boundedEndDate,
+                zoneId = zoneId
+            ).asReversed(),
+            analyticsStartDate = boundedStartDate,
+            analyticsEndDate = boundedEndDate,
+            analyticsInsights = FeedMetricsCalculator.buildAveragesAndTrend(
+                feeds = analyticsWindowFeeds,
+                trendStartDate = boundedStartDate,
+                trendEndDate = boundedEndDate,
+                zoneId = zoneId
+            ),
             settings = settings
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState())
+
+    fun updateAnalyticsDateRange(startDate: LocalDate, endDate: LocalDate) {
+        val today = LocalDate.now(zoneId)
+        val boundedStartDate = startDate.coerceAtMost(today)
+        val boundedEndDate = endDate.coerceAtMost(today)
+        if (boundedEndDate.isBefore(boundedStartDate)) {
+            return
+        }
+        formState.update {
+            it.copy(
+                analyticsStartDate = boundedStartDate,
+                analyticsEndDate = boundedEndDate,
+                analyticsQuickFilterDays = 0L
+            )
+        }
+    }
+
+    fun applyAnalyticsQuickFilter(days: Long) {
+        if (days !in listOf(QUICK_FILTER_SEVEN_DAYS, QUICK_FILTER_FOURTEEN_DAYS, QUICK_FILTER_THIRTY_DAYS)) {
+            return
+        }
+        val today = LocalDate.now(zoneId)
+        val startDate = today.minusDays(days - 1)
+        formState.update {
+            it.copy(
+                analyticsStartDate = startDate,
+                analyticsEndDate = today,
+                analyticsQuickFilterDays = days
+            )
+        }
+    }
 
     fun updateStartTimeMillis(value: Long) = formState.update { it.copy(startTimeMillis = value) }
 

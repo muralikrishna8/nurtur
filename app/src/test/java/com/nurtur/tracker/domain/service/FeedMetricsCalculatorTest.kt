@@ -97,6 +97,40 @@ class FeedMetricsCalculatorTest {
     }
 
     @Test
+    fun test_buildDailySummary_customRange_returnsInclusiveDateWindow() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val startDate = today.minusDays(13)
+        val endDate = today
+        val feedDate = today.minusDays(10)
+        val feedEpoch = feedDate.atStartOfDay(zone).toInstant().toEpochMilli()
+        val feeds = listOf(
+            FeedLog(
+                id = 99,
+                remoteId = null,
+                startTime = feedEpoch + 1_000,
+                endTime = feedEpoch + 2_000,
+                amountOffered = 130,
+                amountConsumed = 100,
+                milkType = "Formula",
+                notes = null
+            )
+        )
+
+        val result = FeedMetricsCalculator.buildDailySummary(
+            feeds = feeds,
+            startDate = startDate,
+            endDate = endDate,
+            zoneId = zone
+        )
+
+        assertEquals(14, result.size)
+        assertEquals(100, result[3].consumedMl)
+        assertEquals(30, result[3].wastedMl)
+        assertEquals(1, result[3].feedCount)
+    }
+
+    @Test
     fun test_buildAveragesAndTrend_threeFeedsWithOneOutlier_excludesLowVolumeAndBuildsTrend() {
         val zone = ZoneId.systemDefault()
         val dayStart = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -217,5 +251,37 @@ class FeedMetricsCalculatorTest {
         assertEquals(null, result.averageVolumePerFeedMl)
         assertEquals(null, result.averageTimeBetweenFeedsMillis)
         assertFalse(result.smoothedTrendConsumedMlByDay.isEmpty())
+    }
+
+    @Test
+    fun test_buildAveragesAndTrend_customTrendRange_returnsExpectedPointCount() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val startDate = today.minusDays(13)
+        val endDate = today
+        val feeds = (0..3).map { dayOffset ->
+            val date = today.minusDays(dayOffset.toLong())
+            val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
+            FeedLog(
+                id = dayOffset.toLong() + 1,
+                remoteId = null,
+                startTime = dayStart + 1_000,
+                endTime = dayStart + 2_000,
+                amountOffered = 140,
+                amountConsumed = 110,
+                milkType = "Formula",
+                notes = null
+            )
+        }
+
+        val result = FeedMetricsCalculator.buildAveragesAndTrend(
+            feeds = feeds,
+            trendStartDate = startDate,
+            trendEndDate = endDate,
+            zoneId = zone
+        )
+
+        assertEquals(14, result.smoothedTrendConsumedMlByDay.size)
+        assertTrue(result.smoothedTrendConsumedMlByDay.all { it >= 0f })
     }
 }

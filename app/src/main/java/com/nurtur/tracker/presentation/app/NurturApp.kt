@@ -79,7 +79,12 @@ fun NurturApp(viewModel: FeedViewModel) {
                 NurturTab.Analytics -> AnalyticsScreen(
                     modifier = Modifier.padding(paddingValues),
                     analytics = uiState.sevenDaySummary,
-                    insights = uiState.analyticsInsights
+                    insights = uiState.analyticsInsights,
+                    selectedStartDate = uiState.analyticsStartDate,
+                    selectedEndDate = uiState.analyticsEndDate,
+                    selectedQuickFilterDays = uiState.analyticsQuickFilterDays,
+                    onDateRangeSelected = viewModel::updateAnalyticsDateRange,
+                    onQuickFilterSelected = viewModel::applyAnalyticsQuickFilter
                 )
 
                 NurturTab.Settings -> SettingsScreen(

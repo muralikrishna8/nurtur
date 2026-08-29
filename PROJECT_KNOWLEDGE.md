@@ -186,6 +186,110 @@ This file is the working knowledge base for future prompts in this repository. U
     - insufficient-data fallback state,
     - all-feeds-under-threshold behavior for averages while preserving trend generation when feed count threshold is met.
 
+### Custom Date-Range Filtering on Analytics
+
+- Requirement requested:
+  - Allow parents to choose an exact analytics date window (manual range and quick presets) so charts and metrics can be reviewed between specific milestones.
+- What changed:
+  - Added analytics date-range state to `FeedUiState` (`analyticsStartDate`, `analyticsEndDate`, `analyticsQuickFilterDays`).
+  - Added `FeedViewModel.updateAnalyticsDateRange(...)` and `FeedViewModel.applyAnalyticsQuickFilter(...)` for manual and one-tap range updates.
+  - Updated analytics data derivation in `FeedViewModel` to filter feeds by the selected inclusive date window and immediately recompute summary + insights.
+  - Extended `FeedMetricsCalculator` with `buildDailySummary(...)` for variable-length windows while preserving `buildSevenDaySummary(...)` compatibility.
+  - Updated `AnalyticsScreen` with a top date selector button, Material 3 `DateRangePicker` modal, and quick filter chips for `Last 7 Days`, `Last 14 Days`, and `Last 30 Days`.
+- Constraints/validation rules:
+  - Date range selection is bounded to `today` (future dates are disabled in picker and clamped in ViewModel).
+  - Manual apply requires both start and end dates and rejects `end < start`.
+  - Quick filters always map to inclusive windows ending at today:
+    - 7 days -> `today-6` to `today`
+    - 14 days -> `today-13` to `today`
+    - 30 days -> `today-29` to `today`
+- Testing impact:
+  - Added tests for `buildDailySummary(...)` inclusive custom-range behavior.
+  - Added tests for custom trendline point count in `buildAveragesAndTrend(...)` across a 14-day window.
+
+### Analytics Date Picker Apply UX and Wide-Range Chart Legibility
+
+- Requirement requested:
+  - Make custom date-range application explicit when selecting dates, and prevent X-axis label squeeze for windows longer than one week.
+- What changed:
+  - Reworked Analytics date picker dialog actions to include visible in-modal `Cancel` and `Apply` controls within dialog content.
+  - Kept one-tap quick filters (`Last 7/14/30 Days`) and made them apply immediately.
+  - Added horizontal chart scrolling for selected windows larger than 7 days.
+  - Extended X-axis labels to show full date text (instead of 3-letter day abbreviations) when range size exceeds one week.
+- Constraints/validation rules:
+  - `Apply` is enabled only when both start and end dates are selected.
+  - Date apply still enforces no future dates and `end >= start`.
+  - Horizontal scroll is activated only when visible range exceeds 7 days to preserve compact view for short windows.
+- Testing impact:
+  - No domain-calculation behavior changed; existing unit tests continue to validate range aggregation and trend sizing.
+
+### Analytics Scroll Affordance and Axis Legibility Polish
+
+- Requirement requested:
+  - Add edge-fade scroll hints, restore dotted guide lines, and prevent multiline X-axis labels from shrinking the plotted graph area.
+- What changed:
+  - Added left/right fade overlays on the chart viewport that appear only when additional horizontal content is available to scroll.
+  - Moved horizontal dotted guide-line rendering into a dedicated plot-area layer so guides remain visible and aligned while scrolling.
+  - Split chart layout into two vertical zones: fixed-height plot area + separate fixed-height label area.
+  - Kept extended-range labels at up to two lines while preventing them from consuming bar/trend plotting height.
+- Constraints/validation rules:
+  - Fade hints are enabled only when selected range exceeds 7 days and the viewport can scroll in that direction.
+  - Plot area and trendline now share the same bounded height, preventing label overflow from distorting Y-axis scaling visuals.
+- Testing impact:
+  - UI-only rendering update; no domain logic changes.
+
+### Analytics Gridline Layering Correction
+
+- Requirement requested:
+  - Ensure horizontal dotted guide lines remain visible after scroll and label-layout refactors.
+- What changed:
+  - Reverted the overlay-layer rendering approach after validating theme-specific contrast as the core issue.
+  - Restored plot-area background guide-line rendering and tuned dark-mode contrast using adaptive color selection.
+- Constraints/validation rules:
+  - Guide lines still use the fixed 4-segment Y-axis scale and full plot width across the scrollable canvas.
+  - Dark surfaces use `onSurface`-derived guide-line tint for stronger visibility; light surfaces keep `outlineVariant` styling.
+- Testing impact:
+  - UI rendering only; no domain or aggregation logic changes.
+
+### Analytics Axis Baseline and Scroll-State Fix
+
+- Requirement requested:
+  - Keep X-axis labels from encroaching on graph semantics and ensure the 7-day view always shows all days after switching from longer, scrolled ranges.
+- What changed:
+  - Aligned Y-axis tick labels with the plot baseline by replacing fixed Y-axis bottom padding with dynamic padding equal to the dedicated X-axis label area height.
+  - Added a reset for horizontal scroll position when the chart is in non-extended mode (7 days or fewer), preventing residual offset from previous long-range scrolling.
+- Constraints/validation rules:
+  - Scroll reset applies only when extended scrolling is disabled, preserving user position for long-range windows.
+  - Baseline alignment is driven by shared layout constants, keeping `0ml` tick and plot floor synchronized.
+- Testing impact:
+  - UI layout/state behavior change only; no domain calculation changes.
+
+### Seven-Day Chart Fit Guarantee
+
+- Requirement requested:
+  - Ensure the 7-day analytics chart always displays all seven days without horizontal scrolling.
+- What changed:
+  - Updated chart width behavior to use full available viewport width when selected range is 7 days or fewer.
+  - Retained explicit widened scrollable width only for ranges greater than 7 days.
+- Constraints/validation rules:
+  - Non-extended mode (<= 7 days) never relies on horizontal scrolling and must render all day labels/bars within the card width.
+  - Extended mode (> 7 days) continues to use horizontal scroll with fade-edge hints.
+- Testing impact:
+  - UI rendering/layout behavior update only; no domain or metrics computation changes.
+
+### Seven-Day Data Visibility Regression Fix
+
+- Requirement requested:
+  - Restore visible bars/labels in 7-day mode after scroll-layout changes.
+- What changed:
+  - Applied horizontal scrolling modifier only when the selected range exceeds 7 days.
+  - Removed scroll-container measurement behavior from non-extended mode to preserve normal width constraints.
+- Constraints/validation rules:
+  - `<= 7 days`: no horizontal scroll modifier, full-width chart measurement.
+  - `> 7 days`: horizontal scroll remains enabled with widened chart canvas.
+- Testing impact:
+  - UI layout behavior fix only; analytics calculations unchanged.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
