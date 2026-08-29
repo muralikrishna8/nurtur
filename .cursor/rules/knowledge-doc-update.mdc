@@ -1,0 +1,26 @@
+---
+description: Enforce PROJECT_KNOWLEDGE updates for behavior changes
+alwaysApply: true
+---
+
+# Knowledge Doc Update Requirement
+
+Update `PROJECT_KNOWLEDGE.md` in every task that changes feature behavior, bug behavior, UX flow, domain logic, persistence, validation, or architecture.
+
+## Required Update Content
+
+Add or extend a subsection under **Implemented Feature Requirements Ledger** with:
+- requirement requested
+- what changed
+- constraints or validation rules
+- testing impact
+
+## Completion Gate
+
+Do not mark the task complete unless `PROJECT_KNOWLEDGE.md` is updated when behavior changed.
+
+If behavior did not change, explicitly state: "No knowledge doc update required: no behavior change."
+
+## Related Maintenance
+
+If setup, runtime commands, or environment variables changed, update `README.md` in the same task.
