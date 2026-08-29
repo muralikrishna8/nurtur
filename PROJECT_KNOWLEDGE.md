@@ -290,6 +290,20 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - UI layout behavior fix only; analytics calculations unchanged.
 
+### Recent Activity Capacity Expansion
+
+- Requirement requested:
+  - In the Home screen recent activity list, show the last 30 feed entries instead of only 5.
+- What changed:
+  - Updated `FeedViewModel` to request `observeRecentFeeds(limit = 30)` using a dedicated constant.
+  - Kept repository and DAO contracts unchanged; only the bounded query limit at the presentation orchestration layer was updated.
+  - Updated `README.md` MVP feature text to reflect the new 30-entry behavior.
+- Constraints/validation rules:
+  - Recent activity remains explicitly bounded (30) to avoid unbounded list rendering and query growth.
+  - Ordering semantics remain unchanged (most recent first from existing repository/DAO behavior).
+- Testing impact:
+  - Added `FeedViewModelTest` that verifies `observeRecentFeeds` is called with a limit of 30 during ViewModel initialization.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

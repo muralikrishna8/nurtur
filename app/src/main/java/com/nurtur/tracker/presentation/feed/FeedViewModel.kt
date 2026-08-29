@@ -31,6 +31,7 @@ private const val DEFAULT_ANALYTICS_WINDOW_DAYS = 7L
 private const val QUICK_FILTER_SEVEN_DAYS = 7L
 private const val QUICK_FILTER_FOURTEEN_DAYS = 14L
 private const val QUICK_FILTER_THIRTY_DAYS = 30L
+private const val RECENT_FEEDS_LIMIT = 30
 
 data class FeedUiState(
     val latestFeed: FeedLog? = null,
@@ -74,7 +75,7 @@ class FeedViewModel(
     )
 
     private val latestFeedFlow = repository.observeLatestFeed()
-    private val recentFeedsFlow = repository.observeRecentFeeds(limit = 5)
+    private val recentFeedsFlow = repository.observeRecentFeeds(limit = RECENT_FEEDS_LIMIT)
     private val allFeedsFlow = repository.observeAllFeeds()
     private val settingsFlow = settingsRepository.settingsFlow
 

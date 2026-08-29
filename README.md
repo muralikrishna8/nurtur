@@ -39,7 +39,7 @@ gradle :app:assembleDebug
 - Home tab with:
   - Time since last feed hero section
   - Today snapshot (consumed ml, wasted ml, feed count)
-  - Recent feed activity list (latest 5)
+- Recent feed activity list (latest 30)
   - Tap any recent entry to edit it
   - Swipe-to-delete feed entries
 - Log Feed popup with:
