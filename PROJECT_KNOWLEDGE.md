@@ -71,6 +71,24 @@ This file is the working knowledge base for future prompts in this repository. U
 - Default bottle size is now applied only when starting a fresh new-entry flow, not during manual field edits.
 - This prevents cleared input from being re-appended (for example `90` turning into `90120`).
 
+### Dynamic Color-Coded Feed Timer
+
+- Requirement requested: Surface urgency at a glance by color-coding "Time since last feed" against a configurable target interval.
+- What changed:
+  - Added a persisted settings field: `targetFeedIntervalMinutes` (DataStore-backed, default 180 minutes / 3 hours).
+  - Added Settings input: "Target feed interval (hours)".
+  - Home hero timer now computes a timer status (`SAFE`, `APPROACHING`, `OVERDUE`) via new domain service `FeedTimerStatusCalculator`.
+  - Timer text color now changes in real time on the Home screen without refresh.
+- Constraints/validation rules:
+  - Settings repository clamps stored interval to `30..720` minutes.
+  - ViewModel accepts only whole-hour input `1..12` before persisting.
+  - Color thresholds:
+    - Safe: elapsed more than 30 minutes before target -> theme default dark text.
+    - Approaching: elapsed within 30 minutes before target -> amber (`#9C6A0C`).
+    - Overdue: elapsed 30+ minutes past target -> red (`#B3261E`).
+- Testing impact:
+  - Added unit tests for timer status threshold transitions in `FeedTimerStatusCalculatorTest`.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
@@ -82,6 +100,7 @@ This file is the working knowledge base for future prompts in this repository. U
   - ViewModel validation and state transitions
   - Repository mapping tests
   - UI tests for dialog save/validation behavior
+  - UI tests for timer color transitions across safe/approaching/overdue states
 
 ## 6) Update Protocol (Mandatory for Every Prompt)
 

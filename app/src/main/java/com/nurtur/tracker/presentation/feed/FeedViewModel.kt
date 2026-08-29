@@ -22,6 +22,9 @@ import java.time.ZoneId
 
 private const val DEFAULT_MILK_TYPE = "Formula"
 private const val DEFAULT_BOTTLE_SIZE_ML = 120
+private const val MIN_TARGET_INTERVAL_HOURS = 1
+private const val MAX_TARGET_INTERVAL_HOURS = 12
+private const val MINUTES_PER_HOUR = 60
 
 data class FeedUiState(
     val latestFeed: FeedLog? = null,
@@ -137,6 +140,16 @@ class FeedViewModel(
     fun updateDefaultMilkType(value: String) {
         viewModelScope.launch {
             settingsRepository.updateDefaultMilkType(value)
+        }
+    }
+
+    fun updateTargetFeedIntervalHours(value: String) {
+        val parsedHours = value.toIntOrNull() ?: return
+        if (parsedHours !in MIN_TARGET_INTERVAL_HOURS..MAX_TARGET_INTERVAL_HOURS) {
+            return
+        }
+        viewModelScope.launch {
+            settingsRepository.updateTargetFeedIntervalMinutes(parsedHours * MINUTES_PER_HOUR)
         }
     }
 

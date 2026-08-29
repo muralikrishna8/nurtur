@@ -16,12 +16,14 @@ class DataStoreSettingsRepository(private val context: Context) : SettingsReposi
     private object Keys {
         val defaultBottleSizeMl = intPreferencesKey("default_bottle_size_ml")
         val defaultMilkType = stringPreferencesKey("default_milk_type")
+        val targetFeedIntervalMinutes = intPreferencesKey("target_feed_interval_minutes")
     }
 
     override val settingsFlow: Flow<SettingsState> = context.dataStore.data.map { preferences ->
         SettingsState(
             defaultBottleSizeMl = preferences[Keys.defaultBottleSizeMl] ?: 120,
-            defaultMilkType = preferences[Keys.defaultMilkType] ?: "Formula"
+            defaultMilkType = preferences[Keys.defaultMilkType] ?: "Formula",
+            targetFeedIntervalMinutes = preferences[Keys.targetFeedIntervalMinutes] ?: 180
         )
     }
 
@@ -34,6 +36,12 @@ class DataStoreSettingsRepository(private val context: Context) : SettingsReposi
     override suspend fun updateDefaultMilkType(value: String) {
         context.dataStore.edit { preferences ->
             preferences[Keys.defaultMilkType] = if (value == "Breastmilk") value else "Formula"
+        }
+    }
+
+    override suspend fun updateTargetFeedIntervalMinutes(value: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.targetFeedIntervalMinutes] = value.coerceIn(30, 720)
         }
     }
 }

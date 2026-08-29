@@ -83,7 +83,8 @@ fun NurturApp(viewModel: FeedViewModel) {
                 modifier = Modifier.padding(paddingValues),
                 settingsState = uiState.settings,
                 onDefaultBottleSizeChange = viewModel::updateDefaultBottleSizeMl,
-                onDefaultMilkTypeChange = viewModel::updateDefaultMilkType
+                onDefaultMilkTypeChange = viewModel::updateDefaultMilkType,
+                onTargetFeedIntervalHoursChange = viewModel::updateTargetFeedIntervalHours
             )
         }
     }

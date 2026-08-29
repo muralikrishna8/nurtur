@@ -7,4 +7,5 @@ interface SettingsRepository {
     val settingsFlow: Flow<SettingsState>
     suspend fun updateDefaultBottleSizeMl(value: Int)
     suspend fun updateDefaultMilkType(value: String)
+    suspend fun updateTargetFeedIntervalMinutes(value: Int)
 }

@@ -29,9 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.FeedLog
+import com.nurtur.tracker.domain.service.FeedTimerStatus
+import com.nurtur.tracker.domain.service.FeedTimerStatusCalculator
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.presentation.feed.FeedUiState
 import java.time.Duration
@@ -41,6 +44,8 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 
 private const val TIMER_REFRESH_MS = 60_000L
+private val feedTimerApproachingColor = Color(0xFF9C6A0C)
+private val feedTimerOverdueColor = Color(0xFFB3261E)
 private val timestampFormatter = DateTimeFormatter.ofPattern("MMM d, hh:mm a")
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +91,11 @@ fun HomeScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            HeroSection(currentTime = currentTime, latestFeed = uiState.latestFeed)
+            HeroSection(
+                currentTime = currentTime,
+                latestFeed = uiState.latestFeed,
+                targetFeedIntervalMinutes = uiState.settings.targetFeedIntervalMinutes
+            )
             SnapshotSection(uiState = uiState)
             Text("Recent Activity", style = MaterialTheme.typography.titleMedium)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -144,7 +153,11 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HeroSection(currentTime: Long, latestFeed: FeedLog?) {
+private fun HeroSection(
+    currentTime: Long,
+    latestFeed: FeedLog?,
+    targetFeedIntervalMinutes: Int
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Time since last feed", style = MaterialTheme.typography.titleMedium)
@@ -154,10 +167,22 @@ private fun HeroSection(currentTime: Long, latestFeed: FeedLog?) {
             } else {
                 "${elapsed.toHours()}h ${elapsed.toMinutesPart()}m"
             }
+            val timerStatus = elapsed?.let {
+                FeedTimerStatusCalculator.calculate(
+                    elapsed = it,
+                    targetInterval = Duration.ofMinutes(targetFeedIntervalMinutes.toLong())
+                )
+            } ?: FeedTimerStatus.SAFE
+            val timerColor = when (timerStatus) {
+                FeedTimerStatus.SAFE -> MaterialTheme.colorScheme.onSurface
+                FeedTimerStatus.APPROACHING -> feedTimerApproachingColor
+                FeedTimerStatus.OVERDUE -> feedTimerOverdueColor
+            }
             Text(
                 text = elapsedText,
                 style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = timerColor
             )
             val lastFeedTime = latestFeed?.let {
                 timestampFormatter.format(Instant.ofEpochMilli(it.endTime).atZone(ZoneId.systemDefault()))

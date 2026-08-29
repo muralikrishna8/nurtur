@@ -29,7 +29,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     settingsState: SettingsState,
     onDefaultBottleSizeChange: (String) -> Unit,
-    onDefaultMilkTypeChange: (String) -> Unit
+    onDefaultMilkTypeChange: (String) -> Unit,
+    onTargetFeedIntervalHoursChange: (String) -> Unit
 ) {
     var isMilkTypeMenuExpanded by remember { mutableStateOf(false) }
 
@@ -44,6 +45,13 @@ fun SettingsScreen(
             value = settingsState.defaultBottleSizeMl.toString(),
             onValueChange = onDefaultBottleSizeChange,
             label = { Text("Default bottle size (ml)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = (settingsState.targetFeedIntervalMinutes / 60).toString(),
+            onValueChange = onTargetFeedIntervalHoursChange,
+            label = { Text("Target feed interval (hours)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
