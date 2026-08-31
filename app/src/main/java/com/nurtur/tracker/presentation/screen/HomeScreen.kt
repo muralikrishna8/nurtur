@@ -18,13 +18,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,7 +54,6 @@ fun HomeScreen(
     onStartAddFeed: () -> Unit,
     onSaveFeed: () -> Boolean,
     onDeleteFromEditor: () -> Boolean,
-    onDeleteFeed: (Long) -> Unit,
     onEditFeed: (FeedLog) -> Unit,
     onStartTimeChange: (Long) -> Unit,
     onEndTimeChange: (Long) -> Unit,
@@ -98,29 +95,20 @@ fun HomeScreen(
             )
             SnapshotSection(uiState = uiState)
             Text("Recent Activity", style = MaterialTheme.typography.titleMedium)
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(uiState.recentFeeds, key = { it.id }) { feed ->
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        positionalThreshold = { it * 0.35f }
-                    )
-                    if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                        LaunchedEffect(feed.id) {
-                            onDeleteFeed(feed.id)
-                        }
+            key(uiState.recentFeeds.firstOrNull()?.id, uiState.recentFeeds.size) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(uiState.recentFeeds, key = { it.id }) { feed ->
+                        FeedRow(
+                            feed = feed,
+                            onClick = {
+                                onEditFeed(feed)
+                                isDialogVisible = true
+                            }
+                        )
                     }
-                    SwipeToDismissBox(
-                        state = dismissState,
-                        backgroundContent = {},
-                        content = {
-                            FeedRow(
-                                feed = feed,
-                                onClick = {
-                                    onEditFeed(feed)
-                                    isDialogVisible = true
-                                }
-                            )
-                        }
-                    )
                 }
             }
         }

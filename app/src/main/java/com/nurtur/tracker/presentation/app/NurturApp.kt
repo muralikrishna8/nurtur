@@ -66,7 +66,6 @@ fun NurturApp(viewModel: FeedViewModel) {
                     onStartAddFeed = viewModel::startNewFeedEntry,
                     onSaveFeed = viewModel::saveFeed,
                     onDeleteFromEditor = viewModel::deleteEditingFeed,
-                    onDeleteFeed = { viewModel.deleteFeed(it) },
                     onEditFeed = viewModel::startEditingFeed,
                     onStartTimeChange = viewModel::updateStartTimeMillis,
                     onEndTimeChange = viewModel::updateEndTimeMillis,

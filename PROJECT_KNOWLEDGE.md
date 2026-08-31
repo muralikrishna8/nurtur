@@ -304,6 +304,35 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Added `FeedViewModelTest` that verifies `observeRecentFeeds` is called with a limit of 30 during ViewModel initialization.
 
+### Remove Swipe-to-Delete from Recent Activity
+
+- Requirement requested:
+  - Remove swipe-to-delete from the Home screen recent activity list because it causes accidental deletions and is rarely used intentionally.
+- What changed:
+  - Removed `SwipeToDismissBox` behavior from Home recent activity rows.
+  - Recent activity rows are now tap-to-open only, preserving edit/delete flows through the existing log editor dialog.
+  - Removed now-unused `onDeleteFeed` callback parameter from `HomeScreen` and its call site in `NurturApp`.
+- Constraints/validation rules:
+  - Deletion remains an explicit action available from the editor dialog, not from list gestures.
+  - Recent activity ordering and list size behavior remain unchanged.
+- Testing impact:
+  - UX interaction behavior changed; no domain calculation or persistence contracts were modified.
+  - Existing unit tests continue to validate data/logic paths; recommend manual UI verification to confirm swipe no longer triggers deletion.
+
+### Recent Activity Immediate Refresh Fix
+
+- Requirement requested:
+  - After saving a new activity, the Home recent activity list should refresh immediately without requiring scroll or tab switch.
+- What changed:
+  - Wrapped the Home `LazyColumn` in a Compose `key(...)` tied to recent feed identity (`firstOrNull()?.id` and list size).
+  - This forces list subtree refresh when new feed items are added, ensuring immediate redraw when `recentFeeds` emits.
+- Constraints/validation rules:
+  - Feed ordering, item tap behavior, and edit/delete flows remain unchanged.
+  - The fix is presentation-layer only and does not modify repository or persistence behavior.
+- Testing impact:
+  - UI behavior fix; domain/unit logic unchanged.
+  - Recommended manual verification: add a feed and confirm it appears instantly at the top of Recent Activity.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
