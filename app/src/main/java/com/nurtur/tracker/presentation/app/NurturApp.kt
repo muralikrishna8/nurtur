@@ -9,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +39,15 @@ fun NurturApp(viewModel: FeedViewModel) {
     var selectedTab by remember { mutableStateOf(NurturTab.Home) }
 
     NurturTheme(themeMode = uiState.settings.themeMode) {
+        val navItemColors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -49,19 +58,22 @@ fun NurturApp(viewModel: FeedViewModel) {
                         selected = selectedTab == NurturTab.Home,
                         onClick = { selectedTab = NurturTab.Home },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text(NurturTab.Home.label) }
+                        label = { Text(NurturTab.Home.label) },
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         selected = selectedTab == NurturTab.Analytics,
                         onClick = { selectedTab = NurturTab.Analytics },
                         icon = { Icon(Icons.Default.BarChart, contentDescription = "Analytics") },
-                        label = { Text(NurturTab.Analytics.label) }
+                        label = { Text(NurturTab.Analytics.label) },
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         selected = selectedTab == NurturTab.Settings,
                         onClick = { selectedTab = NurturTab.Settings },
                         icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                        label = { Text(NurturTab.Settings.label) }
+                        label = { Text(NurturTab.Settings.label) },
+                        colors = navItemColors
                     )
                 }
             }

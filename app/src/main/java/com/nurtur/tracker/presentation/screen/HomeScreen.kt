@@ -1,31 +1,41 @@
 package com.nurtur.tracker.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocalDrink
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,10 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
@@ -48,12 +65,15 @@ import com.nurtur.tracker.presentation.theme.NurturColorTokens
 import com.nurtur.tracker.presentation.theme.NurturDimens
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 
 private const val TIMER_REFRESH_MS = 60_000L
-private val timestampFormatter = DateTimeFormatter.ofPattern("MMM d, hh:mm a")
+private const val BREASTMILK_TYPE = "Breastmilk"
+private val timeOnlyFormatter = DateTimeFormatter.ofPattern("h:mm a")
+private val dayTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +94,9 @@ fun HomeScreen(
     var isDialogVisible by remember { mutableStateOf(false) }
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val listState = rememberLazyListState()
-    val isFabExpanded = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 20
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val successColor = if (isDarkTheme) NurturColorTokens.DarkSuccess else NurturColorTokens.LightSuccess
+    val warningColor = if (isDarkTheme) NurturColorTokens.DarkWarning else NurturColorTokens.LightWarning
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -85,17 +107,48 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { CenterAlignedTopAppBar(title = { Text("Nurtur") }) },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Nurtur",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { /* Profile placeholder for visual parity */ }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Profile"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                expanded = isFabExpanded,
+            FloatingActionButton(
                 onClick = {
                     onStartAddFeed()
                     isDialogVisible = true
                 },
-                text = { Text("Log Feed") },
-                icon = { Text("+") }
-            )
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(16.dp),
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 2.dp,
+                    pressedElevation = 4.dp
+                ),
+                modifier = Modifier.semantics { contentDescription = "Log a new feed" }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -105,19 +158,34 @@ fun HomeScreen(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(NurturDimens.SectionSpacing)
         ) {
-            item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
                 HeroSection(
                     currentTime = currentTime,
                     latestFeed = uiState.latestFeed,
-                    targetFeedIntervalMinutes = uiState.settings.targetFeedIntervalMinutes
+                    targetFeedIntervalMinutes = uiState.settings.targetFeedIntervalMinutes,
+                    successColor = successColor,
+                    warningColor = warningColor,
+                    isDarkTheme = isDarkTheme
                 )
             }
-            item { SnapshotSection(uiState = uiState) }
-            item { Text("Recent Feeds", style = MaterialTheme.typography.titleMedium) }
+            item {
+                SnapshotSection(
+                    uiState = uiState,
+                    warningColor = warningColor
+                )
+            }
+            item {
+                Text(
+                    text = "Recent Feeds",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
             items(uiState.recentFeeds, key = { it.id }) { feed ->
                 FeedRow(
                     feed = feed,
+                    successColor = successColor,
+                    warningColor = warningColor,
                     onClick = {
                         onEditFeed(feed)
                         isDialogVisible = true
@@ -158,97 +226,293 @@ fun HomeScreen(
 private fun HeroSection(
     currentTime: Long,
     latestFeed: FeedLog?,
-    targetFeedIntervalMinutes: Int
+    targetFeedIntervalMinutes: Int,
+    successColor: Color,
+    warningColor: Color,
+    isDarkTheme: Boolean
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    val elapsed = latestFeed?.let {
+        Duration.between(Instant.ofEpochMilli(it.endTime), Instant.ofEpochMilli(currentTime))
+    }
+    val elapsedText = if (elapsed == null || elapsed.isNegative) {
+        "--"
+    } else {
+        "${elapsed.toHours()}h ${elapsed.toMinutesPart()}m"
+    }
+    val timerStatus = elapsed?.let {
+        FeedTimerStatusCalculator.calculate(
+            elapsed = it,
+            targetInterval = Duration.ofMinutes(targetFeedIntervalMinutes.toLong())
+        )
+    } ?: FeedTimerStatus.SAFE
+    val badgeLabel = when (timerStatus) {
+        FeedTimerStatus.SAFE -> "On track"
+        FeedTimerStatus.APPROACHING -> "Approaching"
+        FeedTimerStatus.OVERDUE -> "Overdue"
+    }
+    val badgeBackground = when (timerStatus) {
+        FeedTimerStatus.SAFE -> successColor
+        FeedTimerStatus.APPROACHING,
+        FeedTimerStatus.OVERDUE -> warningColor
+    }
+    val badgeContent = when {
+        timerStatus == FeedTimerStatus.SAFE && !isDarkTheme -> Color.White
+        timerStatus == FeedTimerStatus.SAFE && isDarkTheme -> NurturColorTokens.DarkOnPrimary
+        else -> NurturColorTokens.DarkOnPrimary
+    }
+    val helperText = when (timerStatus) {
+        FeedTimerStatus.SAFE -> null
+        FeedTimerStatus.APPROACHING,
+        FeedTimerStatus.OVERDUE -> "Gentle warning"
+    }
+    val lastFeedSubtext = latestFeed?.let {
+        "Last feed was at ${formatRelativeFeedTime(it.endTime)}"
+    } ?: "No feed logged yet"
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 0.dp
+    ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Time since last feed", style = MaterialTheme.typography.titleMedium)
-            val elapsed = latestFeed?.let { Duration.between(Instant.ofEpochMilli(it.endTime), Instant.ofEpochMilli(currentTime)) }
-            val elapsedText = if (elapsed == null || elapsed.isNegative) "--" else "${elapsed.toHours()}h ${elapsed.toMinutesPart()}m"
-            val timerStatus = elapsed?.let {
-                FeedTimerStatusCalculator.calculate(
-                    elapsed = it,
-                    targetInterval = Duration.ofMinutes(targetFeedIntervalMinutes.toLong())
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = "TIME SINCE LAST FEED",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                    fontWeight = FontWeight.Medium
                 )
-            } ?: FeedTimerStatus.SAFE
-            val timerColor = when (timerStatus) {
-                FeedTimerStatus.SAFE -> MaterialTheme.colorScheme.onSurface
-                FeedTimerStatus.APPROACHING -> NurturColorTokens.LightWarning
-                FeedTimerStatus.OVERDUE -> if (MaterialTheme.colorScheme.background == NurturColorTokens.DarkBackground) {
-                    NurturColorTokens.DarkWarning
-                } else {
-                    NurturColorTokens.LightWarning
-                }
+                StatusBadge(
+                    label = badgeLabel,
+                    background = badgeBackground,
+                    contentColor = badgeContent
+                )
             }
             Text(
                 text = elapsedText,
                 style = MaterialTheme.typography.displayLarge,
-                color = timerColor,
-                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             )
-            val lastFeedTime = latestFeed?.let {
-                timestampFormatter.format(Instant.ofEpochMilli(it.endTime).atZone(ZoneId.systemDefault()))
-            } ?: "No feed yet"
-            Text("Last feed: $lastFeedTime", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun SnapshotSection(uiState: FeedUiState) {
-    val totalOffered = uiState.todayConsumedMl + uiState.todayWastedMl
-    val consumedProgress = if (totalOffered <= 0) 0f else uiState.todayConsumedMl.toFloat() / totalOffered.toFloat()
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Daily Snapshot", style = MaterialTheme.typography.titleMedium)
-                Text("Consumed: ${uiState.todayConsumedMl}ml", style = MaterialTheme.typography.bodyLarge)
-                Text("Wasted milk: ${uiState.todayWastedMl}ml", style = MaterialTheme.typography.bodyLarge)
-                Text("Feeds: ${uiState.todayFeedCount}", style = MaterialTheme.typography.bodyMedium)
-            }
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { consumedProgress },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    color = NurturColorTokens.LightSuccess,
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .sizeOrFallback()
+            Text(
+                text = lastFeedSubtext,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            )
+            helperText?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = warningColor,
+                    fontWeight = FontWeight.Medium
                 )
-                Text("${(consumedProgress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
 }
 
 @Composable
-private fun FeedRow(feed: FeedLog, onClick: () -> Unit) {
-    val endTimeText = timestampFormatter.format(Instant.ofEpochMilli(feed.endTime).atZone(ZoneId.systemDefault()))
-    val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
-    ElevatedCard(
+private fun StatusBadge(
+    label: String,
+    background: Color,
+    contentColor: Color
+) {
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = NurturDimens.MinTouchTarget + 24.dp)
-            .clickable { onClick() }
+            .clip(RoundedCornerShape(50))
+            .background(background)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        ListItem(
-            headlineContent = { Text("$endTimeText - ${feed.amountConsumed}ml") },
-            supportingContent = { Text("$wasted ml wasted") },
-            leadingContent = { Icon(Icons.Default.LocalDrink, contentDescription = null) },
-            trailingContent = { Text(feed.milkType, style = MaterialTheme.typography.bodyMedium) }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
 
-private fun Modifier.sizeOrFallback(): Modifier = this.heightIn(min = 64.dp)
+@Composable
+private fun SnapshotSection(
+    uiState: FeedUiState,
+    warningColor: Color
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "Daily Snapshot",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SnapshotMetricCard(
+                label = "Consumed",
+                value = "${uiState.todayConsumedMl} ml",
+                valueColor = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            SnapshotMetricCard(
+                label = "Wasted",
+                value = "${uiState.todayWastedMl} ml",
+                valueColor = warningColor,
+                modifier = Modifier.weight(1f)
+            )
+            SnapshotMetricCard(
+                label = "Feeds",
+                value = "${uiState.todayFeedCount} count",
+                valueColor = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SnapshotMetricCard(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(NurturDimens.CardCornerRadius),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 15.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = valueColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeedRow(
+    feed: FeedLog,
+    successColor: Color,
+    warningColor: Color,
+    onClick: () -> Unit
+) {
+    val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
+    val isBreastmilk = feed.milkType.equals(BREASTMILK_TYPE, ignoreCase = true)
+    val milkLabel = if (isBreastmilk) "Breast Milk" else "Formula Milk"
+    val feedIcon: ImageVector = if (isBreastmilk) Icons.Default.AutoAwesome else Icons.Default.LocalDrink
+    val statusText = if (wasted == 0) "Clean feed" else "$wasted ml wasted"
+    val statusColor = if (wasted == 0) successColor else warningColor
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(NurturDimens.CardCornerRadius),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = feedIcon,
+                    contentDescription = milkLabel,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = milkLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = formatRelativeFeedTime(feed.endTime),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${feed.amountConsumed} ml",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (wasted > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(warningColor)
+                        )
+                    }
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = statusColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatRelativeFeedTime(epochMillis: Long): String {
+    val zoneId = ZoneId.systemDefault()
+    val feedDateTime = Instant.ofEpochMilli(epochMillis).atZone(zoneId)
+    val feedDate = feedDateTime.toLocalDate()
+    val today = LocalDate.now(zoneId)
+    val timePart = timeOnlyFormatter.format(feedDateTime)
+    return when (feedDate) {
+        today -> "Today, $timePart"
+        today.minusDays(1) -> "Yesterday, $timePart"
+        else -> dayTimeFormatter.format(feedDateTime)
+    }
+}

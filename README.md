@@ -37,10 +37,12 @@ gradle :app:assembleDebug
 ## Current MVP Features
 
 - Home tab with:
-  - Centered app bar + modern hero section for time since last feed
-  - Daily snapshot card (consumed ml, wasted ml, feed count, consumed progress ring)
+  - Left-aligned app title and decorative profile icon
+  - Time since last feed hero card with status badge (On track / Approaching / Overdue)
+  - Daily snapshot metric cards (consumed ml, wasted ml, feed count)
 - Recent feed activity list (latest 30)
   - Tap any recent entry to edit it
+  - Milk-type icon tiles with clean-feed / wasted status labels
   - No swipe-delete gesture on Home (delete remains explicit in editor flow)
 - Log Feed bottom sheet with:
   - Date/time pickers for start and end time

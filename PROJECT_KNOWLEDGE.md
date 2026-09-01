@@ -365,6 +365,25 @@ This file is the working knowledge base for future prompts in this repository. U
     - Theme segmented toggle persistence and immediate UI application,
     - Analytics quick filter updates and chart readability in both themes.
 
+### Home Screen Mockup Alignment (Soft Plum)
+
+- Requirement requested:
+  - Align Home presentation with the provided light/dark mockups using the soft plum palette.
+- What changed:
+  - Rebuilt Home header as left-aligned `Nurtur` title with decorative profile icon action.
+  - Replaced hero timer card with Primary Container surface, status badge (`On track` / `Approaching` / `Overdue`), last-feed subtext, and optional gentle-warning copy.
+  - Replaced single snapshot card + ring with three equal Daily Snapshot metric cards (`Consumed`, `Wasted`, `Feeds`); wasted values use Warning color.
+  - Redesigned Recent Feeds rows with milk-type icon tile, type + relative timestamp, consumed volume, and `Clean feed` / wasted status styling.
+  - Switched FAB to a square Primary Container `+` button.
+  - Tuned bottom navigation selected indicator/colors to Primary Container / Primary for visual parity with the mock.
+- Constraints/validation rules:
+  - Tap-to-edit only remains enforced for recent feeds; no swipe-delete on Home.
+  - Timer status thresholds remain driven by existing `FeedTimerStatusCalculator`.
+  - Profile icon is visual-only and does not introduce a new settings route.
+- Testing impact:
+  - Presentation-only change; domain/unit tests unchanged.
+  - Recommended manual verification of light and dark Home states for badge colors, wasted highlighting, and FAB placement.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
