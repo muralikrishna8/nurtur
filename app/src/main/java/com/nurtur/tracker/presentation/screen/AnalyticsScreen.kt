@@ -72,6 +72,7 @@ import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.max
 
+
 private const val BAR_SECTION_WEIGHT_SCALE = 1f
 private const val DAY_LABEL_LENGTH = 3
 private const val AXIS_TICK_COUNT = 4
@@ -404,7 +405,10 @@ private fun ChartCard(
                                         endX = fadeWidthPx
                                     ),
                                     topLeft = Offset.Zero,
-                                    size = androidx.compose.ui.geometry.Size(fadeWidthPx, size.height)
+                                    size = androidx.compose.ui.geometry.Size(
+                                        fadeWidthPx,
+                                        size.height
+                                    )
                                 )
                             }
                             if (canScrollRight) {
@@ -415,7 +419,10 @@ private fun ChartCard(
                                         endX = size.width
                                     ),
                                     topLeft = Offset(x = size.width - fadeWidthPx, y = 0f),
-                                    size = androidx.compose.ui.geometry.Size(fadeWidthPx, size.height)
+                                    size = androidx.compose.ui.geometry.Size(
+                                        fadeWidthPx,
+                                        size.height
+                                    )
                                 )
                             }
                         }
@@ -440,7 +447,8 @@ private fun ChartCard(
                                 .fillMaxWidth()
                                 .height(220.dp - xAxisLabelAreaHeight)
                                 .drawBehind {
-                                    val dashPath = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
+                                    val dashPath =
+                                        PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
                                     val segmentHeight = size.height / AXIS_TICK_COUNT.toFloat()
                                     for (tick in 0..AXIS_TICK_COUNT) {
                                         val y = tick * segmentHeight
@@ -480,7 +488,12 @@ private fun ChartCard(
                                                 modifier = Modifier
                                                     .fillMaxWidth(0.7f)
                                                     .fillMaxHeight(barHeightRatio)
-                                                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                                                    .clip(
+                                                        RoundedCornerShape(
+                                                            topStart = 8.dp,
+                                                            topEnd = 8.dp
+                                                        )
+                                                    )
                                                     .clickable { onBarSelected(index) }
                                             ) {
                                                 if (wastedRatio > 0f) {
@@ -534,7 +547,9 @@ private fun ChartCard(
                                             drawPath(
                                                 path = path,
                                                 color = trendLineColor,
-                                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                    width = 4f
+                                                )
                                             )
                                         }
                                 )
@@ -578,7 +593,9 @@ private fun ChartCard(
                 Text(
                     text = "${day.dayLabel}: Consumed ${day.consumedMl}ml, Wasted ${day.wastedMl}ml",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -592,7 +609,7 @@ private fun ChartLegend(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         LegendItem(color = consumedColor, label = "Consumed")
