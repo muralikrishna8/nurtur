@@ -384,6 +384,24 @@ This file is the working knowledge base for future prompts in this repository. U
   - Presentation-only change; domain/unit tests unchanged.
   - Recommended manual verification of light and dark Home states for badge colors, wasted highlighting, and FAB placement.
 
+### Log Feed Mockup Alignment (Offered/Consumed Number Inputs)
+
+- Requirement requested:
+  - Align the Log Feed / Edit Feed bottom sheet with the updated mockup for both light and dark mode, and ensure Offered/Consumed use number input type.
+- What changed:
+  - Restyled `LogFeedDialog` as a themed `ModalBottomSheet` with uppercase field labels, clock-trailing date/time fields, icon milk-type segmented control (`Breast` display / `Breastmilk` stored), side-by-side Offered/Consumed fields, warning-colored auto-calculated wasted milk, multiline notes placeholder, and primary Save / red Delete Feed Entry actions.
+  - Edit mode shows a relative "Logged …" subtitle; create and edit share the same field order with Time of Completion directly under Time of Feed, and both modes display full date+time in those fields.
+  - Offered and Consumed inputs use `KeyboardType.Number` with digit-only sanitization (max 4 digits).
+  - All text inputs and the inactive milk-type segment use `LightBackground` / `DarkBackground` container colors; wasted milk uses Warning tokens so primary actions remain accessible in both themes.
+  - Milk-type segmented control, date/time fields, and volume fields share a 56dp control height for visual alignment.
+- Constraints/validation rules:
+  - Domain persistence values remain unchanged (`Breastmilk` / `Formula`).
+  - Existing ViewModel validation remains authoritative (`endTime >= startTime`, offered `1..1000`, consumed `0..offered`).
+  - Notes length cap remains 280 characters in the ViewModel.
+- Testing impact:
+  - Presentation-only change; domain/unit tests unchanged.
+  - Recommended manual verification: create and edit flows in light and dark mode, number keyboard on volume fields, wasted auto-update, and delete entry affordance on edit.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:
