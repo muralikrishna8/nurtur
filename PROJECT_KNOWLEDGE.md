@@ -412,6 +412,7 @@ This file is the working knowledge base for future prompts in this repository. U
   - Offered and Consumed inputs use `KeyboardType.Number` with digit-only sanitization (max 4 digits).
   - All text inputs and the inactive milk-type segment use `LightBackground` / `DarkBackground` container colors; wasted milk uses Warning tokens so primary actions remain accessible in both themes.
   - Milk-type segmented control, date/time fields, and volume fields share a 56dp control height for visual alignment.
+  - Replaced native Android `DatePickerDialog` / `TimePickerDialog` with Material 3 `DatePickerDialog` + `TimePicker` so feed date/time selection inherits Nurtur light/dark theme tokens (same approach as Analytics).
 - Constraints/validation rules:
   - Domain persistence values remain unchanged (`Breastmilk` / `Formula`).
   - Existing ViewModel validation remains authoritative (`endTime >= startTime`, offered `1..1000`, consumed `0..offered`).
@@ -426,7 +427,7 @@ This file is the working knowledge base for future prompts in this repository. U
   - Add remote datasource implementation
   - Keep domain repository contracts stable
   - Introduce sync conflict strategy and offline-first policy
-- Improve form UX with Material date/time picker components in Compose
+- Improve form UX with Material date/time picker components in Compose (Log Feed now uses Material 3 pickers; further polish optional)
 - Add fuller test coverage:
   - ViewModel validation and state transitions
   - Repository mapping tests

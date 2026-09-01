@@ -1,8 +1,5 @@
 package com.nurtur.tracker.presentation.screen
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,8 +18,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,15 +36,21 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,16 +63,26 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
 
 private const val BREASTMILK_TYPE = "Breastmilk"
 private const val FORMULA_TYPE = "Formula"
 private const val MAX_VOLUME_DIGITS = 4
 private const val NOTES_MIN_LINES = 3
 private val InputControlHeight = 50.dp
+private val UtcZoneId: ZoneId = ZoneId.of("UTC")
 
 private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a")
 private val timeOnlyFormatter = DateTimeFormatter.ofPattern("h:mm a")
+
+private enum class FeedDateTimeTarget {
+    START,
+    END
+}
+
+private enum class FeedDateTimeStep {
+    DATE,
+    TIME
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +98,7 @@ fun LogFeedDialog(
     onMilkTypeChange: (String) -> Unit,
     onNotesChange: (String) -> Unit
 ) {
-    val context = LocalContext.current
+    var dateTimePickerTarget by remember { mutableStateOf<FeedDateTimeTarget?>(null) }
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val warningColor = if (isDarkTheme) {
         NurturColorTokens.DarkWarning
@@ -124,6 +141,24 @@ fun LogFeedDialog(
         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
+    dateTimePickerTarget?.let { target ->
+        ThemedFeedDateTimePicker(
+            initialTimeMillis = when (target) {
+                FeedDateTimeTarget.START -> uiState.startTimeMillis
+                FeedDateTimeTarget.END -> uiState.endTimeMillis
+            },
+            zoneId = zoneId,
+            onDismiss = { dateTimePickerTarget = null },
+            onConfirm = { selectedMillis ->
+                when (target) {
+                    FeedDateTimeTarget.START -> onStartTimeChange(selectedMillis)
+                    FeedDateTimeTarget.END -> onEndTimeChange(selectedMillis)
+                }
+                dateTimePickerTarget = null
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -151,13 +186,7 @@ fun LogFeedDialog(
                 value = startTimeText,
                 shape = fieldShape,
                 colors = fieldColors,
-                onClick = {
-                    showDateTimePicker(
-                        context = context,
-                        initialTimeMillis = uiState.startTimeMillis,
-                        onDateTimeSelected = onStartTimeChange
-                    )
-                }
+                onClick = { dateTimePickerTarget = FeedDateTimeTarget.START }
             )
 
             DateTimeField(
@@ -165,13 +194,7 @@ fun LogFeedDialog(
                 value = endTimeText,
                 shape = fieldShape,
                 colors = fieldColors,
-                onClick = {
-                    showDateTimePicker(
-                        context = context,
-                        initialTimeMillis = uiState.endTimeMillis,
-                        onDateTimeSelected = onEndTimeChange
-                    )
-                }
+                onClick = { dateTimePickerTarget = FeedDateTimeTarget.END }
             )
 
             FieldLabel(text = "MILK TYPE")
@@ -475,36 +498,99 @@ private fun formatLoggedSubtitle(epochMillis: Long, zoneId: ZoneId): String {
     }
 }
 
-private fun showDateTimePicker(
-    context: android.content.Context,
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemedFeedDateTimePicker(
     initialTimeMillis: Long,
-    onDateTimeSelected: (Long) -> Unit
+    zoneId: ZoneId,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
 ) {
-    val calendar = Calendar.getInstance().apply { timeInMillis = initialTimeMillis }
-    DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val pickedDate = Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, month)
-                set(Calendar.DAY_OF_MONTH, dayOfMonth)
-            }
-            TimePickerDialog(
-                context,
-                { _, hourOfDay, minute ->
-                    pickedDate.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                    pickedDate.set(Calendar.MINUTE, minute)
-                    pickedDate.set(Calendar.SECOND, 0)
-                    pickedDate.set(Calendar.MILLISECOND, 0)
-                    onDateTimeSelected(pickedDate.timeInMillis)
+    var step by remember { mutableStateOf(FeedDateTimeStep.DATE) }
+    val initialDateTime = remember(initialTimeMillis, zoneId) {
+        Instant.ofEpochMilli(initialTimeMillis).atZone(zoneId)
+    }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = localDateToUtcStartMillis(initialDateTime.toLocalDate())
+    )
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialDateTime.hour,
+        initialMinute = initialDateTime.minute,
+        is24Hour = false
+    )
+
+    when (step) {
+        FeedDateTimeStep.DATE -> {
+            DatePickerDialog(
+                onDismissRequest = onDismiss,
+                confirmButton = {
+                    TextButton(
+                        onClick = { step = FeedDateTimeStep.TIME },
+                        enabled = datePickerState.selectedDateMillis != null
+                    ) {
+                        Text("Next")
+                    }
                 },
-                calendar.get(Calendar.HOUR_OF_DAY),
-                calendar.get(Calendar.MINUTE),
-                false
-            ).show()
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).show()
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    colors = DatePickerDefaults.colors()
+                )
+            }
+        }
+
+        FeedDateTimeStep.TIME -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = {
+                    Text("Select time")
+                },
+                text = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val selectedDateMillis = datePickerState.selectedDateMillis ?: return@TextButton
+                            val selectedDate = utcStartMillisToLocalDate(selectedDateMillis)
+                            val selectedMillis = selectedDate
+                                .atTime(timePickerState.hour, timePickerState.minute)
+                                .atZone(zoneId)
+                                .toInstant()
+                                .toEpochMilli()
+                            onConfirm(selectedMillis)
+                        }
+                    ) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { step = FeedDateTimeStep.DATE }) {
+                        Text("Back")
+                    }
+                }
+            )
+        }
+    }
+}
+
+private fun localDateToUtcStartMillis(date: LocalDate): Long {
+    return date.atStartOfDay(UtcZoneId).toInstant().toEpochMilli()
+}
+
+private fun utcStartMillisToLocalDate(utcStartMillis: Long): LocalDate {
+    return Instant.ofEpochMilli(utcStartMillis).atZone(UtcZoneId).toLocalDate()
 }
