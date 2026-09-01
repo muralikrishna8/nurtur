@@ -437,7 +437,7 @@ private fun FeedRow(
             .heightIn(min = 72.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(NurturDimens.CardCornerRadius),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp
     ) {
         Row(
@@ -451,7 +451,7 @@ private fun FeedRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
