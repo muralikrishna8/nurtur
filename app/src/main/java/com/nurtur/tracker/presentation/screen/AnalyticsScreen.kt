@@ -3,9 +3,11 @@ package com.nurtur.tracker.presentation.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
@@ -23,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDateRangePickerState
@@ -50,6 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.AnalyticsInsights
 import com.nurtur.tracker.domain.model.DailyAnalytics
+import com.nurtur.tracker.presentation.theme.NurturDimens
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -73,7 +78,7 @@ private val CHART_FADE_EDGE_WIDTH: Dp = 18.dp
 private val Y_AXIS_WIDTH: Dp = 44.dp
 private val rangeLabelFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
@@ -113,19 +118,41 @@ fun AnalyticsScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        TextButton(onClick = { showDateRangePicker = true }) {
-            Text(
-                text = buildDateRangeButtonText(selectedStartDate, selectedEndDate, selectedQuickFilterDays),
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-        Card(modifier = Modifier.fillMaxWidth()) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = { CenterAlignedTopAppBar(title = { Text("Analytics") }) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = NurturDimens.ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickFilterChip(
+                    label = "7D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_7_DAYS,
+                    onClick = { onQuickFilterSelected(QUICK_FILTER_LAST_7_DAYS) }
+                )
+                QuickFilterChip(
+                    label = "14D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_14_DAYS,
+                    onClick = { onQuickFilterSelected(QUICK_FILTER_LAST_14_DAYS) }
+                )
+                QuickFilterChip(
+                    label = "30D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_30_DAYS,
+                    onClick = { onQuickFilterSelected(QUICK_FILTER_LAST_30_DAYS) }
+                )
+                TextButton(onClick = { showDateRangePicker = true }) {
+                    Text(
+                        text = buildDateRangeButtonText(selectedStartDate, selectedEndDate, selectedQuickFilterDays),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+            Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,6 +381,7 @@ fun AnalyticsScreen(
                 )
             }
         }
+    }
     }
     if (showDateRangePicker) {
         val zoneId = ZoneId.systemDefault()

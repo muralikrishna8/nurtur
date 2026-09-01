@@ -333,6 +333,38 @@ This file is the working knowledge base for future prompts in this repository. U
   - UI behavior fix; domain/unit logic unchanged.
   - Recommended manual verification: add a feed and confirm it appears instantly at the top of Recent Activity.
 
+### UI Revamp v2 (Modern Parent-Friendly Refresh)
+
+- Requirement requested:
+  - Modernize the app UI across Home, Log Feed, Analytics, and Settings to a friendlier Material 3 presentation while preserving existing feed tracking behavior and validation.
+- What changed:
+  - Added explicit app design tokens for light/dark color schemes and updated typography scale in the theme layer.
+  - Locked v2 brand palette to soft plum anchored on Primary `#4A4458` (dark Primary `#CFC3E6`), with matching surface, warning, error, and success tokens.
+  - Updated app shell bottom navigation styling to consistently use themed surface/inset behavior.
+  - Rebuilt Home presentation with centered app bar, refined hero timer card, daily snapshot card with progress ring, and expanded/collapsing extended FAB behavior tied to list scroll.
+  - Migrated feed entry UX from `AlertDialog` to `ModalBottomSheet` while preserving add/edit/delete flows and form validation.
+  - Kept log semantics as `Offered` + `Consumed` with derived read-only `Wasted milk`.
+  - Modernized Analytics layout with dedicated top app bar and inline quick-filter chips (7D/14D/30D) while preserving existing date-range and chart calculation behavior.
+  - Reworked Settings into sectioned cards, switched theme choice to segmented controls, switched default milk type to segmented controls, and moved target interval editing to a bounded slider.
+  - Added non-interactive v2 data-management placeholders (`Export Data`, `Delete All Data`) labeled as coming soon.
+- Constraints/validation rules:
+  - Existing ViewModel validation behavior remains authoritative for feed save/update:
+    - numeric parse required,
+    - `endTime >= startTime`,
+    - offered range `1..1000`,
+    - consumed range `0..offered`.
+  - Recent feed list remains tap-to-edit only with no swipe-delete on Home.
+  - Target interval remains bounded by existing hour constraints (`1..12`) via Settings -> ViewModel persistence.
+  - Analytics quick filters remain constrained to supported windows (7/14/30); no mandatory always-on `All` range was introduced.
+- Testing impact:
+  - Ran `./gradlew test` successfully after UI refactor.
+  - Existing domain and ViewModel unit tests remain passing, validating unchanged business logic and validation paths.
+  - Recommended manual regression checks:
+    - Home FAB expand/collapse behavior on scroll,
+    - Log bottom sheet open/edit/save/delete behavior,
+    - Theme segmented toggle persistence and immediate UI application,
+    - Analytics quick filter updates and chart readability in both themes.
+
 ## 5) Open Decisions / Next Features
 
 - Phase 2 Firebase Firestore sync:

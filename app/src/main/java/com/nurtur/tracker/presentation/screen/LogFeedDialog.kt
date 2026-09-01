@@ -7,28 +7,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.presentation.feed.FeedUiState
+import com.nurtur.tracker.presentation.theme.NurturDimens
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -49,7 +53,6 @@ fun LogFeedDialog(
     onNotesChange: (String) -> Unit
 ) {
     val context = LocalContext.current
-    var isMilkTypeMenuExpanded by remember { mutableStateOf(false) }
     val offered = uiState.amountOfferedInput.toIntOrNull() ?: 0
     val consumed = uiState.amountConsumedInput.toIntOrNull() ?: 0
     val wasted = FeedMetricsCalculator.calculateWasteMl(offered, consumed)
@@ -60,124 +63,128 @@ fun LogFeedDialog(
     val endTimeText = remember(uiState.endTimeMillis) {
         formatter.format(Instant.ofEpochMilli(uiState.endTimeMillis).atZone(ZoneId.systemDefault()))
     }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text(if (uiState.isEditMode) "Edit Feed" else "Log Feed") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = startTimeText,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Start Time") },
-                    modifier = Modifier.fillMaxWidth()
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    if (uiState.isEditMode) "Edit Feed" else "Log Feed",
+                    style = MaterialTheme.typography.headlineMedium
                 )
-                TextButton(
-                    onClick = {
-                        showDateTimePicker(
-                            context = context,
-                            initialTimeMillis = uiState.startTimeMillis,
-                            onDateTimeSelected = onStartTimeChange
-                        )
-                    }
-                ) { Text("Pick Start Date & Time") }
-                OutlinedTextField(
-                    value = endTimeText,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("End Time") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                TextButton(
-                    onClick = {
-                        showDateTimePicker(
-                            context = context,
-                            initialTimeMillis = uiState.endTimeMillis,
-                            onDateTimeSelected = onEndTimeChange
-                        )
-                    }
-                ) { Text("Pick End Date & Time") }
-                OutlinedTextField(
-                    value = uiState.amountOfferedInput,
-                    onValueChange = onAmountOfferedChange,
-                    label = { Text("Amount Offered (ml)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = uiState.amountConsumedInput,
-                    onValueChange = onAmountConsumedChange,
-                    label = { Text("Amount Consumed (ml)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text("Amount Wasted: $wasted ml", style = MaterialTheme.typography.bodyMedium)
-
-                ExposedDropdownMenuBox(
-                    expanded = isMilkTypeMenuExpanded,
-                    onExpandedChange = { isMilkTypeMenuExpanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = uiState.milkTypeInput,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Milk Type") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isMilkTypeMenuExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close")
+                }
+            }
+            OutlinedTextField(
+                value = startTimeText,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Start Time") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            TextButton(
+                onClick = {
+                    showDateTimePicker(
+                        context = context,
+                        initialTimeMillis = uiState.startTimeMillis,
+                        onDateTimeSelected = onStartTimeChange
                     )
-                    ExposedDropdownMenu(
-                        expanded = isMilkTypeMenuExpanded,
-                        onDismissRequest = { isMilkTypeMenuExpanded = false }
+                }
+            ) {
+                Text("Pick Start Date & Time")
+            }
+            OutlinedTextField(
+                value = endTimeText,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("End Time") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            TextButton(
+                onClick = {
+                    showDateTimePicker(
+                        context = context,
+                        initialTimeMillis = uiState.endTimeMillis,
+                        onDateTimeSelected = onEndTimeChange
+                    )
+                }
+            ) {
+                Text("Pick End Date & Time")
+            }
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val types = listOf("Breastmilk", "Formula")
+                types.forEachIndexed { index, milkType ->
+                    SegmentedButton(
+                        selected = uiState.milkTypeInput == milkType,
+                        onClick = { onMilkTypeChange(milkType) },
+                        shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = types.size
+                        )
                     ) {
-                        listOf("Formula", "Breastmilk").forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = {
-                                    onMilkTypeChange(option)
-                                    isMilkTypeMenuExpanded = false
-                                }
-                            )
-                        }
+                        Text(milkType)
                     }
                 }
-
-                OutlinedTextField(
-                    value = uiState.notesInput,
-                    onValueChange = onNotesChange,
-                    label = { Text("Notes (optional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                uiState.formError?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
-                }
             }
-        },
-        confirmButton = {
-            Button(onClick = onSave) {
-                Text(if (uiState.isEditMode) "Update" else "Save")
+            OutlinedTextField(
+                value = uiState.amountOfferedInput,
+                onValueChange = onAmountOfferedChange,
+                label = { Text("Offered (ml)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = uiState.amountConsumedInput,
+                onValueChange = onAmountConsumedChange,
+                label = { Text("Consumed (ml)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text("Wasted milk: $wasted ml", style = MaterialTheme.typography.bodyMedium)
+            OutlinedTextField(
+                value = uiState.notesInput,
+                onValueChange = onNotesChange,
+                label = { Text("Notes (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            uiState.formError?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
             }
-        },
-        dismissButton = {
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            ) {
+                Text(if (uiState.isEditMode) "Save Changes" else "Save Feed")
+            }
             if (uiState.isEditMode) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDelete) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
-                    }
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
-                }
-            } else {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = NurturDimens.ScreenHorizontalPadding)
+                ) {
+                    Text("Delete Feed", color = MaterialTheme.colorScheme.error)
                 }
             }
-        },
-        modifier = Modifier.padding(8.dp)
-    )
+        }
+    }
 }
 
 private fun showDateTimePicker(

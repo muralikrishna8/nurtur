@@ -37,24 +37,27 @@ gradle :app:assembleDebug
 ## Current MVP Features
 
 - Home tab with:
-  - Time since last feed hero section
-  - Today snapshot (consumed ml, wasted ml, feed count)
+  - Centered app bar + modern hero section for time since last feed
+  - Daily snapshot card (consumed ml, wasted ml, feed count, consumed progress ring)
 - Recent feed activity list (latest 30)
   - Tap any recent entry to edit it
-  - Swipe-to-delete feed entries
-- Log Feed popup with:
+  - No swipe-delete gesture on Home (delete remains explicit in editor flow)
+- Log Feed bottom sheet with:
   - Date/time pickers for start and end time
-  - Offered/consumed inputs in ml
-  - Dynamic wasted milk calculation
-  - Milk type selection (Formula/Breastmilk)
+  - Offered/consumed inputs in ml with enforced validation
+  - Read-only dynamic wasted milk calculation
+  - Segmented milk type selection (Formula/Breastmilk)
   - Optional notes
-  - Edit mode with Update and Delete actions
-  - Validation that keeps popup open on invalid input
+  - Edit mode with Save Changes and explicit Delete Feed action
+  - Validation that keeps sheet open on invalid input
 - Analytics tab:
+  - Top app bar and inline 7D/14D/30D quick filter chips
   - Last 7 days grouped summary (consumed, wasted, feed count)
 - Settings tab:
-  - Default bottle size (ml)
-  - Default milk type
+  - Sectioned cards for Defaults, Preferences, and Data (v2 placeholders)
+  - Default bottle size (ml) and segmented default milk type
+  - Theme segmented control (System/Light/Dark)
+  - Target feed interval slider (hours)
 
 ## Architecture Overview
 

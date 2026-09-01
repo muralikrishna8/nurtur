@@ -7,8 +7,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.nurtur.tracker.domain.model.ThemeMode
 
-private val LightScheme = lightColorScheme()
-private val DarkScheme = darkColorScheme()
+private val LightScheme = lightColorScheme(
+    primary = NurturColorTokens.LightPrimary,
+    onPrimary = NurturColorTokens.LightOnPrimary,
+    primaryContainer = NurturColorTokens.LightPrimaryContainer,
+    onPrimaryContainer = NurturColorTokens.LightOnPrimaryContainer,
+    secondary = NurturColorTokens.LightSecondary,
+    onSecondary = NurturColorTokens.LightOnSecondary,
+    tertiary = NurturColorTokens.LightSecondary,
+    onTertiary = NurturColorTokens.LightOnSecondary,
+    background = NurturColorTokens.LightBackground,
+    onBackground = NurturColorTokens.LightOnSurface,
+    surface = NurturColorTokens.LightSurface,
+    onSurface = NurturColorTokens.LightOnSurface,
+    surfaceVariant = NurturColorTokens.LightSurfaceVariant,
+    onSurfaceVariant = NurturColorTokens.LightOnSurfaceVariant,
+    error = NurturColorTokens.LightError,
+    onError = NurturColorTokens.LightOnError
+)
+
+private val DarkScheme = darkColorScheme(
+    primary = NurturColorTokens.DarkPrimary,
+    onPrimary = NurturColorTokens.DarkOnPrimary,
+    primaryContainer = NurturColorTokens.DarkPrimaryContainer,
+    onPrimaryContainer = NurturColorTokens.DarkOnPrimaryContainer,
+    secondary = NurturColorTokens.DarkSecondary,
+    onSecondary = NurturColorTokens.DarkOnSecondary,
+    tertiary = NurturColorTokens.DarkSecondary,
+    onTertiary = NurturColorTokens.DarkOnSecondary,
+    background = NurturColorTokens.DarkBackground,
+    onBackground = NurturColorTokens.DarkOnSurface,
+    surface = NurturColorTokens.DarkSurface,
+    onSurface = NurturColorTokens.DarkOnSurface,
+    surfaceVariant = NurturColorTokens.DarkSurfaceVariant,
+    onSurfaceVariant = NurturColorTokens.DarkOnSurfaceVariant,
+    error = NurturColorTokens.DarkError,
+    onError = NurturColorTokens.DarkOnError
+)
 
 @Composable
 fun NurturTheme(

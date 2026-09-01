@@ -1,40 +1,51 @@
 package com.nurtur.tracker.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalDrink
-import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.FeedLog
+import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.domain.service.FeedTimerStatus
 import com.nurtur.tracker.domain.service.FeedTimerStatusCalculator
-import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.presentation.feed.FeedUiState
+import com.nurtur.tracker.presentation.theme.NurturColorTokens
+import com.nurtur.tracker.presentation.theme.NurturDimens
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -42,8 +53,6 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 
 private const val TIMER_REFRESH_MS = 60_000L
-private val feedTimerApproachingColor = Color(0xFF9C6A0C)
-private val feedTimerOverdueColor = Color(0xFFB3261E)
 private val timestampFormatter = DateTimeFormatter.ofPattern("MMM d, hh:mm a")
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +73,9 @@ fun HomeScreen(
 ) {
     var isDialogVisible by remember { mutableStateOf(false) }
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    val listState = rememberLazyListState()
+    val isFabExpanded = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 20
+
     LaunchedEffect(Unit) {
         while (true) {
             currentTime = System.currentTimeMillis()
@@ -73,44 +85,46 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        topBar = { CenterAlignedTopAppBar(title = { Text("Nurtur") }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                onStartAddFeed()
-                isDialogVisible = true
-            }) {
-                Text("+")
-            }
+            ExtendedFloatingActionButton(
+                expanded = isFabExpanded,
+                onClick = {
+                    onStartAddFeed()
+                    isDialogVisible = true
+                },
+                text = { Text("Log Feed") },
+                icon = { Text("+") }
+            )
         }
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = NurturDimens.ScreenHorizontalPadding),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(NurturDimens.SectionSpacing)
         ) {
-            HeroSection(
-                currentTime = currentTime,
-                latestFeed = uiState.latestFeed,
-                targetFeedIntervalMinutes = uiState.settings.targetFeedIntervalMinutes
-            )
-            SnapshotSection(uiState = uiState)
-            Text("Recent Activity", style = MaterialTheme.typography.titleMedium)
-            key(uiState.recentFeeds.firstOrNull()?.id, uiState.recentFeeds.size) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(uiState.recentFeeds, key = { it.id }) { feed ->
-                        FeedRow(
-                            feed = feed,
-                            onClick = {
-                                onEditFeed(feed)
-                                isDialogVisible = true
-                            }
-                        )
-                    }
-                }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
+            item {
+                HeroSection(
+                    currentTime = currentTime,
+                    latestFeed = uiState.latestFeed,
+                    targetFeedIntervalMinutes = uiState.settings.targetFeedIntervalMinutes
+                )
             }
+            item { SnapshotSection(uiState = uiState) }
+            item { Text("Recent Feeds", style = MaterialTheme.typography.titleMedium) }
+            items(uiState.recentFeeds, key = { it.id }) { feed ->
+                FeedRow(
+                    feed = feed,
+                    onClick = {
+                        onEditFeed(feed)
+                        isDialogVisible = true
+                    }
+                )
+            }
+            item { Spacer(modifier = Modifier.height(84.dp)) }
         }
     }
 
@@ -146,15 +160,15 @@ private fun HeroSection(
     latestFeed: FeedLog?,
     targetFeedIntervalMinutes: Int
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text("Time since last feed", style = MaterialTheme.typography.titleMedium)
             val elapsed = latestFeed?.let { Duration.between(Instant.ofEpochMilli(it.endTime), Instant.ofEpochMilli(currentTime)) }
-            val elapsedText = if (elapsed == null || elapsed.isNegative) {
-                "--"
-            } else {
-                "${elapsed.toHours()}h ${elapsed.toMinutesPart()}m"
-            }
+            val elapsedText = if (elapsed == null || elapsed.isNegative) "--" else "${elapsed.toHours()}h ${elapsed.toMinutesPart()}m"
             val timerStatus = elapsed?.let {
                 FeedTimerStatusCalculator.calculate(
                     elapsed = it,
@@ -163,14 +177,19 @@ private fun HeroSection(
             } ?: FeedTimerStatus.SAFE
             val timerColor = when (timerStatus) {
                 FeedTimerStatus.SAFE -> MaterialTheme.colorScheme.onSurface
-                FeedTimerStatus.APPROACHING -> feedTimerApproachingColor
-                FeedTimerStatus.OVERDUE -> feedTimerOverdueColor
+                FeedTimerStatus.APPROACHING -> NurturColorTokens.LightWarning
+                FeedTimerStatus.OVERDUE -> if (MaterialTheme.colorScheme.background == NurturColorTokens.DarkBackground) {
+                    NurturColorTokens.DarkWarning
+                } else {
+                    NurturColorTokens.LightWarning
+                }
             }
             Text(
                 text = elapsedText,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = timerColor
+                style = MaterialTheme.typography.displayLarge,
+                color = timerColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             )
             val lastFeedTime = latestFeed?.let {
                 timestampFormatter.format(Instant.ofEpochMilli(it.endTime).atZone(ZoneId.systemDefault()))
@@ -182,18 +201,32 @@ private fun HeroSection(
 
 @Composable
 private fun SnapshotSection(uiState: FeedUiState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        Card(modifier = Modifier.weight(1f)) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Today's Milk", style = MaterialTheme.typography.titleSmall)
-                Text("${uiState.todayConsumedMl} ml consumed")
-                Text("${uiState.todayWastedMl} ml wasted")
+    val totalOffered = uiState.todayConsumedMl + uiState.todayWastedMl
+    val consumedProgress = if (totalOffered <= 0) 0f else uiState.todayConsumedMl.toFloat() / totalOffered.toFloat()
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Daily Snapshot", style = MaterialTheme.typography.titleMedium)
+                Text("Consumed: ${uiState.todayConsumedMl}ml", style = MaterialTheme.typography.bodyLarge)
+                Text("Wasted milk: ${uiState.todayWastedMl}ml", style = MaterialTheme.typography.bodyLarge)
+                Text("Feeds: ${uiState.todayFeedCount}", style = MaterialTheme.typography.bodyMedium)
             }
-        }
-        Card(modifier = Modifier.weight(1f)) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Feed Count", style = MaterialTheme.typography.titleSmall)
-                Text("${uiState.todayFeedCount} feeds")
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { consumedProgress },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    color = NurturColorTokens.LightSuccess,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .sizeOrFallback()
+                )
+                Text("${(consumedProgress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -203,25 +236,19 @@ private fun SnapshotSection(uiState: FeedUiState) {
 private fun FeedRow(feed: FeedLog, onClick: () -> Unit) {
     val endTimeText = timestampFormatter.format(Instant.ofEpochMilli(feed.endTime).atZone(ZoneId.systemDefault()))
     val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onClick() }
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(endTimeText, style = MaterialTheme.typography.bodyMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Default.LocalDrink, contentDescription = null)
-                    Text(feed.milkType)
-                }
-            }
-            Column {
-                Text("${feed.amountConsumed} ml consumed")
-                Text("$wasted ml wasted")
-            }
-        }
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = NurturDimens.MinTouchTarget + 24.dp)
+            .clickable { onClick() }
+    ) {
+        ListItem(
+            headlineContent = { Text("$endTimeText - ${feed.amountConsumed}ml") },
+            supportingContent = { Text("$wasted ml wasted") },
+            leadingContent = { Icon(Icons.Default.LocalDrink, contentDescription = null) },
+            trailingContent = { Text(feed.milkType, style = MaterialTheme.typography.bodyMedium) }
+        )
     }
 }
+
+private fun Modifier.sizeOrFallback(): Modifier = this.heightIn(min = 64.dp)
