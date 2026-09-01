@@ -26,7 +26,6 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -294,6 +293,10 @@ private fun AnalyticsQuickFilterPill(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                 color = contentColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.padding(vertical = 12.dp)
             )
         }
@@ -727,32 +730,37 @@ private fun AnalyticsDateRangePickerDialog(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                FilterChip(
-                    selected = selectedQuickFilterDays == QUICK_FILTER_LAST_7_DAYS,
+                AnalyticsQuickFilterPill(
+                    label = "7D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_7_DAYS,
                     onClick = {
                         onQuickFilterSelected(QUICK_FILTER_LAST_7_DAYS)
                         onDismiss()
                     },
-                    label = { Text("Last 7 Days") }
+                    modifier = Modifier.weight(1f)
                 )
-                FilterChip(
-                    selected = selectedQuickFilterDays == QUICK_FILTER_LAST_14_DAYS,
+                AnalyticsQuickFilterPill(
+                    label = "14D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_14_DAYS,
                     onClick = {
                         onQuickFilterSelected(QUICK_FILTER_LAST_14_DAYS)
                         onDismiss()
                     },
-                    label = { Text("Last 14 Days") }
+                    modifier = Modifier.weight(1f)
                 )
-                FilterChip(
-                    selected = selectedQuickFilterDays == QUICK_FILTER_LAST_30_DAYS,
+                AnalyticsQuickFilterPill(
+                    label = "30D",
+                    isSelected = selectedQuickFilterDays == QUICK_FILTER_LAST_30_DAYS,
                     onClick = {
                         onQuickFilterSelected(QUICK_FILTER_LAST_30_DAYS)
                         onDismiss()
                     },
-                    label = { Text("Last 30 Days") }
+                    modifier = Modifier.weight(1f)
                 )
             }
             Row(

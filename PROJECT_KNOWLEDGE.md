@@ -393,6 +393,7 @@ This file is the working knowledge base for future prompts in this repository. U
   - Wrapped the chart in a titled card (`Consumed vs. Wasted`) with total-volume label and Consumed/Wasted legend.
   - Updated stacked bar colors only: Consumed uses Primary tokens; Wasted uses Warning tokens in both themes. Y-axis labels, dashed guide lines, X-axis labels, and the smoothed average trend line remain.
   - Replaced the previous text averages block with a 2x2 period stats grid (`Avg Consumed`, `Avg Wasted`, `Total Feeds`, `Avg Feeds`); Avg Wasted uses Warning color.
+  - Replaced date-picker dialog `FilterChip` presets (`Last 7/14/30 Days`) with the same equal-width `7D` / `14D` / `30D` pills used on the Analytics screen so selected/unselected states stay consistent and labels no longer wrap.
 - Constraints/validation rules:
   - Quick filters remain limited to 7/14/30 day windows; custom inclusive date ranges remain available via the calendar action.
   - Chart scroll behavior is unchanged (`<= 7` days full-width, `> 7` days horizontally scrollable with edge fades).
@@ -400,7 +401,7 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Added `AnalyticsPeriodStatsTest` for period aggregation and display formatting helpers.
   - Domain/ViewModel analytics calculation behavior unchanged.
-  - Recommended manual verification of light and dark Analytics: filter selection, chart colors/axes/trend line, and stats grid values.
+  - Recommended manual verification of light and dark Analytics: filter selection, chart colors/axes/trend line, stats grid values, and date-picker preset pill consistency.
 
 ### Log Feed Mockup Alignment (Offered/Consumed Number Inputs)
 
