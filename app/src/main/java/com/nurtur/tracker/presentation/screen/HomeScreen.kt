@@ -579,7 +579,7 @@ private fun NextAlertChip(
                 contentDescription = "Next feed alert set for $formattedTime"
                 liveRegion = LiveRegionMode.Polite
             },
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         tonalElevation = 0.dp
