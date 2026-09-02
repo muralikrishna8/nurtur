@@ -93,6 +93,59 @@ class FeedViewModelTest {
         assertEquals("Breastmilk", state.milkTypeInput)
         assertEquals(null, state.editingFeedId)
     }
+
+    @Test
+    fun test_updateDefaultBottleSizeMl_persistsValidValue() = runTest {
+        // Arrange
+        val feedRepository = RecordingFeedRepository()
+        val settingsRepository = FakeSettingsRepository(
+            SettingsState(defaultBottleSizeMl = 120)
+        )
+        val viewModel = FeedViewModel(
+            repository = feedRepository,
+            settingsRepository = settingsRepository,
+            feedAlertCoordinator = FeedAlertCoordinator(
+                settingsRepository = settingsRepository,
+                feedRepository = feedRepository,
+                scheduler = NoOpFeedAlertScheduler()
+            )
+        )
+        advanceUntilIdle()
+
+        // Act
+        viewModel.updateDefaultBottleSizeMl("150")
+        advanceUntilIdle()
+
+        // Assert
+        assertEquals(150, settingsRepository.settingsFlow.value.defaultBottleSizeMl)
+    }
+
+    @Test
+    fun test_updateDefaultBottleSizeMl_ignoresEmptyAndBelowMinimum() = runTest {
+        // Arrange
+        val feedRepository = RecordingFeedRepository()
+        val settingsRepository = FakeSettingsRepository(
+            SettingsState(defaultBottleSizeMl = 120)
+        )
+        val viewModel = FeedViewModel(
+            repository = feedRepository,
+            settingsRepository = settingsRepository,
+            feedAlertCoordinator = FeedAlertCoordinator(
+                settingsRepository = settingsRepository,
+                feedRepository = feedRepository,
+                scheduler = NoOpFeedAlertScheduler()
+            )
+        )
+        advanceUntilIdle()
+
+        // Act
+        viewModel.updateDefaultBottleSizeMl("")
+        viewModel.updateDefaultBottleSizeMl("15")
+        advanceUntilIdle()
+
+        // Assert
+        assertEquals(120, settingsRepository.settingsFlow.value.defaultBottleSizeMl)
+    }
 }
 
 private class RecordingFeedRepository : FeedRepository {
@@ -113,7 +166,9 @@ private class FakeSettingsRepository(
     initial: SettingsState = SettingsState()
 ) : SettingsRepository {
     override val settingsFlow = MutableStateFlow(initial)
-    override suspend fun updateDefaultBottleSizeMl(value: Int) = Unit
+    override suspend fun updateDefaultBottleSizeMl(value: Int) {
+        settingsFlow.value = settingsFlow.value.copy(defaultBottleSizeMl = value)
+    }
     override suspend fun updateDefaultMilkType(value: String) = Unit
     override suspend fun updateTargetFeedIntervalMinutes(value: Int) = Unit
     override suspend fun updateThemeMode(value: ThemeMode) = Unit

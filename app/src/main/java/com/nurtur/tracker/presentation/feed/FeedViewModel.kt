@@ -25,6 +25,8 @@ import java.time.ZoneId
 
 private const val DEFAULT_MILK_TYPE = "Formula"
 private const val DEFAULT_BOTTLE_SIZE_ML = 120
+private const val MIN_BOTTLE_SIZE_ML = 30
+private const val MAX_BOTTLE_SIZE_ML = 500
 private const val MIN_TARGET_INTERVAL_HOURS = 1
 private const val MAX_TARGET_INTERVAL_HOURS = 12
 private const val MINUTES_PER_HOUR = 60
@@ -230,6 +232,9 @@ class FeedViewModel(
 
     fun updateDefaultBottleSizeMl(value: String) {
         val parsed = value.toIntOrNull() ?: return
+        if (parsed !in MIN_BOTTLE_SIZE_ML..MAX_BOTTLE_SIZE_ML) {
+            return
+        }
         viewModelScope.launch {
             settingsRepository.updateDefaultBottleSizeMl(parsed)
         }

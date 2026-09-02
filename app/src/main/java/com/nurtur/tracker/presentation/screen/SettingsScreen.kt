@@ -39,6 +39,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
@@ -53,8 +55,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nurtur.tracker.domain.model.SettingsState
@@ -67,6 +71,9 @@ import java.time.format.DateTimeFormatter
 private const val MIN_INTERVAL_HOURS = 1f
 private const val MAX_INTERVAL_HOURS = 7f
 private const val MINUTES_PER_HOUR = 60
+private const val MIN_BOTTLE_SIZE_ML = 30
+private const val MAX_BOTTLE_SIZE_ML = 500
+private const val MAX_BOTTLE_SIZE_DIGITS = 3
 private const val BREASTMILK_TYPE = "Breastmilk"
 private const val FORMULA_TYPE = "Formula"
 private val quietHoursTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
@@ -402,7 +409,23 @@ private fun CompactBottleSizeField(
     onValueChange: (String) -> Unit,
     containerColor: Color
 ) {
-    val displayValue = if (valueMl > 0) valueMl.toString() else ""
+    var isFocused by remember { mutableStateOf(false) }
+    var draft by remember {
+        mutableStateOf(TextFieldValue(text = valueMl.toString()))
+    }
+
+    LaunchedEffect(valueMl, isFocused) {
+        if (!isFocused) {
+            val committed = valueMl.toString()
+            if (draft.text != committed) {
+                draft = TextFieldValue(
+                    text = committed,
+                    selection = TextRange(committed.length)
+                )
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .clip(compactControlShape)
@@ -414,8 +437,22 @@ private fun CompactBottleSizeField(
         horizontalArrangement = Arrangement.End
     ) {
         BasicTextField(
-            value = displayValue,
-            onValueChange = onValueChange,
+            value = draft,
+            onValueChange = { incoming ->
+                val sanitized = sanitizeBottleSizeDraft(incoming.text)
+                draft = if (sanitized == incoming.text) {
+                    incoming
+                } else {
+                    incoming.copy(
+                        text = sanitized,
+                        selection = TextRange(sanitized.length)
+                    )
+                }
+                val parsed = sanitized.toIntOrNull()
+                if (parsed != null && parsed in MIN_BOTTLE_SIZE_ML..MAX_BOTTLE_SIZE_ML) {
+                    onValueChange(sanitized)
+                }
+            },
             singleLine = true,
             textStyle = MaterialTheme.typography.labelLarge.copy(
                 fontWeight = FontWeight.SemiBold,
@@ -424,7 +461,24 @@ private fun CompactBottleSizeField(
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            modifier = Modifier.widthIn(min = 28.dp, max = 56.dp)
+            modifier = Modifier
+                .widthIn(min = 28.dp, max = 56.dp)
+                .onFocusChanged { focusState ->
+                    val wasFocused = isFocused
+                    isFocused = focusState.isFocused
+                    if (wasFocused && !focusState.isFocused) {
+                        val parsed = draft.text.toIntOrNull()
+                        if (parsed == null || parsed !in MIN_BOTTLE_SIZE_ML..MAX_BOTTLE_SIZE_ML) {
+                            val committed = valueMl.toString()
+                            draft = TextFieldValue(
+                                text = committed,
+                                selection = TextRange(committed.length)
+                            )
+                        } else {
+                            onValueChange(parsed.toString())
+                        }
+                    }
+                }
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
@@ -434,6 +488,10 @@ private fun CompactBottleSizeField(
             color = MaterialTheme.colorScheme.onSurface
         )
     }
+}
+
+private fun sanitizeBottleSizeDraft(raw: String): String {
+    return raw.filter { it.isDigit() }.take(MAX_BOTTLE_SIZE_DIGITS)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

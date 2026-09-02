@@ -489,6 +489,21 @@ This file is the working knowledge base for future prompts in this repository. U
   - Existing `ThemeResolverTest` remains the theme-resolution regression check.
   - Recommended manual checks: Settings readability in Light, Dark, and System; interval slider updates overdue timing; Quiet Hours chips open pickers; milk type and bottle size still prefill Log Feed.
 
+### Default Bottle Size Draft Editing
+
+- Requirement requested:
+  - Caregivers could not clear Default Bottle Size and type a new value; deleting digits immediately snapped the field to `30`.
+- What changed:
+  - Settings bottle-size field now keeps a local draft while focused so empty and partial values (for example `1`, `15`) remain editable.
+  - ViewModel only persists bottle size when the parsed value is in `30..500`; empty and below-minimum drafts are ignored.
+  - Leaving the field with an invalid draft restores the last committed value.
+- Constraints/validation rules:
+  - Persisted default bottle size remains `30..500` ml (DataStore still coerces as a safety net).
+  - Draft input is digits-only, max 3 characters.
+- Testing impact:
+  - Added `FeedViewModelTest` coverage for valid persist and ignore-empty/below-minimum paths.
+  - Recommended manual check: clear `150`, type `180`, confirm field does not jump to `30` mid-edit.
+
 ## 5) Open Decisions / Next Features
 
 - Actionable notification polish:
