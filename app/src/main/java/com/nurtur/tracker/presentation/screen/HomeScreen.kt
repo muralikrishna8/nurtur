@@ -60,6 +60,13 @@ import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.domain.service.FeedTimerStatus
 import com.nurtur.tracker.domain.service.FeedTimerStatusCalculator
+import com.nurtur.tracker.domain.service.NextFeedAlertCalculator
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Edit
 import com.nurtur.tracker.presentation.feed.FeedUiState
 import com.nurtur.tracker.presentation.theme.NurturColorTokens
 import com.nurtur.tracker.presentation.theme.NurturDimens
@@ -71,6 +78,7 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 
 private const val TIMER_REFRESH_MS = 60_000L
+private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
 private const val BREASTMILK_TYPE = "Breastmilk"
 private val timeOnlyFormatter = DateTimeFormatter.ofPattern("h:mm a")
 private val dayTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a")
@@ -89,14 +97,27 @@ fun HomeScreen(
     onAmountOfferedChange: (String) -> Unit,
     onAmountConsumedChange: (String) -> Unit,
     onMilkTypeChange: (String) -> Unit,
-    onNotesChange: (String) -> Unit
+    onNotesChange: (String) -> Unit,
+    onNextFeedAlertOverrideChange: (Long) -> Unit
 ) {
     var isDialogVisible by remember { mutableStateOf(false) }
+    var isNextAlertEditorVisible by remember { mutableStateOf(false) }
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val listState = rememberLazyListState()
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val successColor = if (isDarkTheme) NurturColorTokens.DarkSuccess else NurturColorTokens.LightSuccess
     val warningColor = if (isDarkTheme) NurturColorTokens.DarkWarning else NurturColorTokens.LightWarning
+    val nextAlertEpochMillis = remember(
+        uiState.latestFeed?.endTime,
+        uiState.settings.targetFeedIntervalMinutes,
+        uiState.settings.nextFeedAlertOverrideEpochMillis
+    ) {
+        NextFeedAlertCalculator.resolve(
+            lastFeedEndEpochMillis = uiState.latestFeed?.endTime,
+            targetIntervalMinutes = uiState.settings.targetFeedIntervalMinutes,
+            overrideEpochMillis = uiState.settings.nextFeedAlertOverrideEpochMillis
+        )
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -168,6 +189,14 @@ fun HomeScreen(
                     isDarkTheme = isDarkTheme
                 )
             }
+            if (nextAlertEpochMillis != null) {
+                item {
+                    NextAlertChip(
+                        nextAlertEpochMillis = nextAlertEpochMillis,
+                        onEditClick = { isNextAlertEditorVisible = true }
+                    )
+                }
+            }
             item {
                 SnapshotSection(
                     uiState = uiState,
@@ -218,6 +247,18 @@ fun HomeScreen(
             onAmountConsumedChange = onAmountConsumedChange,
             onMilkTypeChange = onMilkTypeChange,
             onNotesChange = onNotesChange
+        )
+    }
+
+    if (isNextAlertEditorVisible && nextAlertEpochMillis != null) {
+        NextAlertTimePickerDialog(
+            initialEpochMillis = nextAlertEpochMillis,
+            minimumEpochMillis = uiState.latestFeed?.endTime ?: currentTime,
+            onDismiss = { isNextAlertEditorVisible = false },
+            onConfirm = { selectedEpochMillis ->
+                onNextFeedAlertOverrideChange(selectedEpochMillis)
+                isNextAlertEditorVisible = false
+            }
         )
     }
 }
@@ -516,3 +557,131 @@ private fun formatRelativeFeedTime(epochMillis: Long): String {
         else -> dayTimeFormatter.format(feedDateTime)
     }
 }
+
+
+@Composable
+private fun NextAlertChip(
+    nextAlertEpochMillis: Long,
+    onEditClick: () -> Unit
+) {
+    val formattedTime = timeOnlyFormatter.format(
+        Instant.ofEpochMilli(nextAlertEpochMillis).atZone(ZoneId.systemDefault())
+    )
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = NurturDimens.MinTouchTarget)
+            .semantics {
+                contentDescription = "Next feed alert set for $formattedTime"
+                liveRegion = LiveRegionMode.Polite
+            },
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Next alert: $formattedTime",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onEditClick) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "EDIT",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NextAlertTimePickerDialog(
+    initialEpochMillis: Long,
+    minimumEpochMillis: Long,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    val zoneId = ZoneId.systemDefault()
+    val initialDateTime = remember(initialEpochMillis) {
+        Instant.ofEpochMilli(initialEpochMillis).atZone(zoneId)
+    }
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialDateTime.hour,
+        initialMinute = initialDateTime.minute,
+        is24Hour = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Next feed alert") },
+        text = {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(
+                        resolveOverrideEpochMillis(
+                            selectedHour = timePickerState.hour,
+                            selectedMinute = timePickerState.minute,
+                            baseEpochMillis = initialEpochMillis,
+                            minimumEpochMillis = minimumEpochMillis,
+                            zoneId = zoneId
+                        )
+                    )
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+internal fun resolveOverrideEpochMillis(
+    selectedHour: Int,
+    selectedMinute: Int,
+    baseEpochMillis: Long,
+    minimumEpochMillis: Long,
+    zoneId: ZoneId
+): Long {
+    val baseDate = Instant.ofEpochMilli(baseEpochMillis).atZone(zoneId).toLocalDate()
+    var candidate = baseDate
+        .atTime(selectedHour, selectedMinute)
+        .atZone(zoneId)
+        .toInstant()
+        .toEpochMilli()
+    while (candidate <= minimumEpochMillis) {
+        candidate += MILLIS_PER_DAY
+    }
+    return candidate
+}
+

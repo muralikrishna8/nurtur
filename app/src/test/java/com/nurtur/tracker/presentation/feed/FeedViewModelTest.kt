@@ -79,4 +79,14 @@ private class FakeSettingsRepository : SettingsRepository {
     override suspend fun updateTargetFeedIntervalMinutes(value: Int) = Unit
 
     override suspend fun updateThemeMode(value: ThemeMode) = Unit
+
+    override suspend fun updatePushNotificationsEnabled(value: Boolean) = Unit
+
+    override suspend fun updateQuietHoursEnabled(value: Boolean) = Unit
+
+    override suspend fun updateQuietHoursStartMinutesOfDay(value: Int) = Unit
+
+    override suspend fun updateQuietHoursEndMinutesOfDay(value: Int) = Unit
+
+    override suspend fun updateNextFeedAlertOverrideEpochMillis(value: Long?) = Unit
 }

@@ -56,10 +56,13 @@ gradle :app:assembleDebug
   - Top app bar and inline 7D/14D/30D quick filter chips
   - Last 7 days grouped summary (consumed, wasted, feed count)
 - Settings tab:
-  - Sectioned cards for Defaults, Preferences, and Data (v2 placeholders)
+  - Sectioned cards for Feeding Defaults, Reminders, Appearance, and Data (v2 placeholders)
   - Default bottle size (ml) and segmented default milk type
+  - Reminders: default feed interval slider (hours), push notifications toggle, quiet hours window
   - Theme segmented control (System/Light/Dark)
-  - Target feed interval slider (hours)
+- Home next-alert chip:
+  - Shows calculated next feed alert after a feed is logged
+  - Inline EDIT overrides the upcoming alert only (does not change the global interval)
 
 ## Architecture Overview
 

@@ -91,7 +91,8 @@ fun NurturApp(viewModel: FeedViewModel) {
                     onAmountOfferedChange = viewModel::updateAmountOffered,
                     onAmountConsumedChange = viewModel::updateAmountConsumed,
                     onMilkTypeChange = viewModel::updateMilkType,
-                    onNotesChange = viewModel::updateNotes
+                    onNotesChange = viewModel::updateNotes,
+                    onNextFeedAlertOverrideChange = viewModel::updateNextFeedAlertOverrideEpochMillis
                 )
 
                 NurturTab.Analytics -> AnalyticsScreen(
@@ -111,7 +112,11 @@ fun NurturApp(viewModel: FeedViewModel) {
                     onDefaultBottleSizeChange = viewModel::updateDefaultBottleSizeMl,
                     onDefaultMilkTypeChange = viewModel::updateDefaultMilkType,
                     onTargetFeedIntervalHoursChange = viewModel::updateTargetFeedIntervalHours,
-                    onThemeModeChange = { selectedMode -> viewModel.updateThemeMode(selectedMode) }
+                    onThemeModeChange = { selectedMode -> viewModel.updateThemeMode(selectedMode) },
+                    onPushNotificationsEnabledChange = viewModel::updatePushNotificationsEnabled,
+                    onQuietHoursEnabledChange = viewModel::updateQuietHoursEnabled,
+                    onQuietHoursStartMinutesChange = viewModel::updateQuietHoursStartMinutesOfDay,
+                    onQuietHoursEndMinutesChange = viewModel::updateQuietHoursEndMinutesOfDay
                 )
             }
         }

@@ -226,6 +226,39 @@ class FeedViewModel(
         }
     }
 
+    fun updatePushNotificationsEnabled(value: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updatePushNotificationsEnabled(value)
+        }
+    }
+
+    fun updateQuietHoursEnabled(value: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateQuietHoursEnabled(value)
+        }
+    }
+
+    fun updateQuietHoursStartMinutesOfDay(value: Int) {
+        viewModelScope.launch {
+            settingsRepository.updateQuietHoursStartMinutesOfDay(value)
+        }
+    }
+
+    fun updateQuietHoursEndMinutesOfDay(value: Int) {
+        viewModelScope.launch {
+            settingsRepository.updateQuietHoursEndMinutesOfDay(value)
+        }
+    }
+
+    fun updateNextFeedAlertOverrideEpochMillis(value: Long) {
+        if (value <= 0L) {
+            return
+        }
+        viewModelScope.launch {
+            settingsRepository.updateNextFeedAlertOverrideEpochMillis(value)
+        }
+    }
+
     fun saveFeed(): Boolean {
         val current = uiState.value
         val startTime = current.startTimeMillis
@@ -259,6 +292,8 @@ class FeedViewModel(
                     notes = current.notesInput.ifBlank { null }
                 )
             )
+            // One-shot override applies only until the next logged feed.
+            settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
             formState.update {
                 it.copy(
                     startTimeMillis = System.currentTimeMillis(),
@@ -279,6 +314,7 @@ class FeedViewModel(
         val feedId = uiState.value.editingFeedId ?: return false
         viewModelScope.launch {
             repository.deleteById(feedId)
+            settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
             startNewFeedEntry()
         }
         return true
@@ -287,6 +323,7 @@ class FeedViewModel(
     fun deleteFeed(id: Long) {
         viewModelScope.launch {
             repository.deleteById(id)
+            settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
         }
     }
 

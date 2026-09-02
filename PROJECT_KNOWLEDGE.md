@@ -422,8 +422,36 @@ This file is the working knowledge base for future prompts in this repository. U
   - Presentation-only change; domain/unit tests unchanged.
   - Recommended manual verification: create and edit flows in light and dark mode, number keyboard on volume fields, wasted auto-update, and delete entry affordance on edit.
 
+### Configurable Feed Alerts (Preferences-First)
+
+- Requirement requested:
+  - Caregivers can set a default feed interval, see the next feed alert on Home after logging a feed, override that next alert time inline without changing the global default, and configure Quiet Hours / push-notification preferences for a later full-alerts delivery story.
+- What changed:
+  - Extended `SettingsState` / DataStore with `pushNotificationsEnabled`, `quietHoursEnabled`, `quietHoursStartMinutesOfDay`, `quietHoursEndMinutesOfDay` (default 10:00 PM–6:00 AM), and one-shot `nextFeedAlertOverrideEpochMillis`.
+  - Added domain services `NextFeedAlertCalculator` (override wins over `lastFeed.end + interval`) and `QuietHoursPolicy` (supports overnight windows) for reuse by the future OS-alarm story.
+  - Home shows a theme-aware “Next alert: [time]” chip under the hero when a latest feed exists; EDIT opens a Material 3 time picker that persists override only for the upcoming feed.
+  - Saving or deleting a feed clears the one-shot override so the next alert recalculates from the global interval.
+  - Settings reorganized into Feeding Defaults, Reminders (interval slider, push toggle, quiet hours toggle + From/To pickers), Appearance (theme), and Data placeholders.
+  - Quiet Hours From/To fields are tappable time pickers (clock icon + full-field press target) so caregivers can edit the window when Quiet Hours is enabled.
+  - Theme schemes now set `secondaryContainer` / `onSecondaryContainer` so the Home chip remains readable in light and dark modes.
+- Constraints/validation rules:
+  - Global interval remains whole hours `1..12` via Settings -> ViewModel; DataStore still clamps minutes to `30..720`.
+  - Quiet-hours start/end minutes coerce to `0..1439`; equal start/end means Quiet Hours inactive.
+  - Override must be after the latest feed end time; selected clock times that fall at/before that floor roll forward by day.
+  - Hero On track / Approaching / Overdue status continues to use the **global** interval only (override does not change timer status).
+  - Push / Quiet Hours are persisted preferences only in this slice; no OS notification scheduling yet.
+- Testing impact:
+  - Added `NextFeedAlertCalculatorTest` and `QuietHoursPolicyTest`.
+  - Extended `FeedViewModelTest` fake `SettingsRepository` for new preference APIs.
+  - `./gradlew :app:compileDebugKotlin` and targeted unit tests (`domain.service.*`, `presentation.feed.*`) passed.
+  - Recommended manual checks: save feed shows next-alert chip; EDIT override persists until next save; Settings quiet hours + push toggles survive process death; light/dark chip and Settings controls remain readable.
+
 ## 5) Open Decisions / Next Features
 
+- Full feed alerts delivery story:
+  - Schedule OS alarms/notifications from effective next-alert time
+  - Apply Quiet Hours as vibrate-only delivery
+  - Gate on `pushNotificationsEnabled` and runtime notification permission
 - Phase 2 Firebase Firestore sync:
   - Add remote datasource implementation
   - Keep domain repository contracts stable

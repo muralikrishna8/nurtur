@@ -10,4 +10,9 @@ interface SettingsRepository {
     suspend fun updateDefaultMilkType(value: String)
     suspend fun updateTargetFeedIntervalMinutes(value: Int)
     suspend fun updateThemeMode(value: ThemeMode)
+    suspend fun updatePushNotificationsEnabled(value: Boolean)
+    suspend fun updateQuietHoursEnabled(value: Boolean)
+    suspend fun updateQuietHoursStartMinutesOfDay(value: Int)
+    suspend fun updateQuietHoursEndMinutesOfDay(value: Int)
+    suspend fun updateNextFeedAlertOverrideEpochMillis(value: Long?)
 }
