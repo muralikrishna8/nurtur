@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feed_alert_title">Time for a feed!</string>
+    <string name="feed_alert_body">It has been 3 hours since the last feed.</string>
+    <string name="feed_alert_escalating_status">Feed alert sounding</string>
+    <string name="feed_alert_action_start_feed">Start Feed</string>
+    <string name="feed_alert_action_snooze">Snooze (15m)</string>
+    <string name="feed_alert_action_skip">Skip</string>
+    <string name="feed_alert_channel_escalating_name">Feed alerts</string>
+    <string name="feed_alert_channel_escalating_description">Escalating feed reminders outside quiet hours</string>
+    <string name="feed_alert_channel_quiet_name">Quiet hours feed alerts</string>
+    <string name="feed_alert_channel_quiet_description">Vibrate-only feed reminders during quiet hours</string>
+</resources>

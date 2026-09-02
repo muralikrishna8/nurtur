@@ -10,6 +10,7 @@ import com.nurtur.tracker.domain.model.SettingsState
 import com.nurtur.tracker.domain.model.ThemeMode
 import com.nurtur.tracker.domain.repository.FeedRepository
 import com.nurtur.tracker.domain.repository.SettingsRepository
+import com.nurtur.tracker.domain.service.FeedAlertCoordinator
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -56,7 +57,8 @@ data class FeedUiState(
     val milkTypeInput: String = DEFAULT_MILK_TYPE,
     val notesInput: String = "",
     val editingFeedId: Long? = null,
-    val formError: String? = null
+    val formError: String? = null,
+    val isLogFeedDialogVisible: Boolean = false
 ) {
     val isEditMode: Boolean
         get() = editingFeedId != null
@@ -64,7 +66,8 @@ data class FeedUiState(
 
 class FeedViewModel(
     private val repository: FeedRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val feedAlertCoordinator: FeedAlertCoordinator
 ) : ViewModel() {
     private val zoneId: ZoneId = ZoneId.systemDefault()
     private val formState = MutableStateFlow(
@@ -78,6 +81,14 @@ class FeedViewModel(
     private val recentFeedsFlow = repository.observeRecentFeeds(limit = RECENT_FEEDS_LIMIT)
     private val allFeedsFlow = repository.observeAllFeeds()
     private val settingsFlow = settingsRepository.settingsFlow
+
+    init {
+        viewModelScope.launch {
+            // Keep OS alarms aligned with feed/settings changes.
+            combine(latestFeedFlow, settingsFlow) { _, _ -> }
+                .collect { rescheduleFeedAlert() }
+        }
+    }
 
     val uiState: StateFlow<FeedUiState> = combine(
         formState,
@@ -120,7 +131,7 @@ class FeedViewModel(
             ),
             settings = settings
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedUiState())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState())
 
     fun updateAnalyticsDateRange(startDate: LocalDate, endDate: LocalDate) {
         val today = LocalDate.now(zoneId)
@@ -164,6 +175,26 @@ class FeedViewModel(
     fun updateMilkType(value: String) = formState.update { it.copy(milkTypeInput = value) }
 
     fun updateNotes(value: String) = formState.update { it.copy(notesInput = value.take(280)) }
+
+
+    fun openLogFeedFromAlert() {
+        startNewFeedEntry()
+        formState.update { it.copy(isLogFeedDialogVisible = true) }
+    }
+
+    fun showLogFeedDialog() {
+        formState.update { it.copy(isLogFeedDialogVisible = true) }
+    }
+
+    fun dismissLogFeedDialog() {
+        formState.update { it.copy(isLogFeedDialogVisible = false) }
+    }
+
+    private fun rescheduleFeedAlert() {
+        viewModelScope.launch {
+            feedAlertCoordinator.rescheduleFromCurrentState()
+        }
+    }
 
     fun startNewFeedEntry() {
         val now = System.currentTimeMillis()
@@ -217,6 +248,7 @@ class FeedViewModel(
         }
         viewModelScope.launch {
             settingsRepository.updateTargetFeedIntervalMinutes(parsedHours * MINUTES_PER_HOUR)
+            rescheduleFeedAlert()
         }
     }
 
@@ -229,24 +261,28 @@ class FeedViewModel(
     fun updatePushNotificationsEnabled(value: Boolean) {
         viewModelScope.launch {
             settingsRepository.updatePushNotificationsEnabled(value)
+            rescheduleFeedAlert()
         }
     }
 
     fun updateQuietHoursEnabled(value: Boolean) {
         viewModelScope.launch {
             settingsRepository.updateQuietHoursEnabled(value)
+            rescheduleFeedAlert()
         }
     }
 
     fun updateQuietHoursStartMinutesOfDay(value: Int) {
         viewModelScope.launch {
             settingsRepository.updateQuietHoursStartMinutesOfDay(value)
+            rescheduleFeedAlert()
         }
     }
 
     fun updateQuietHoursEndMinutesOfDay(value: Int) {
         viewModelScope.launch {
             settingsRepository.updateQuietHoursEndMinutesOfDay(value)
+            rescheduleFeedAlert()
         }
     }
 
@@ -256,6 +292,7 @@ class FeedViewModel(
         }
         viewModelScope.launch {
             settingsRepository.updateNextFeedAlertOverrideEpochMillis(value)
+            rescheduleFeedAlert()
         }
     }
 
@@ -294,6 +331,7 @@ class FeedViewModel(
             )
             // One-shot override applies only until the next logged feed.
             settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
+            rescheduleFeedAlert()
             formState.update {
                 it.copy(
                     startTimeMillis = System.currentTimeMillis(),
@@ -315,6 +353,7 @@ class FeedViewModel(
         viewModelScope.launch {
             repository.deleteById(feedId)
             settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
+            rescheduleFeedAlert()
             startNewFeedEntry()
         }
         return true
@@ -324,6 +363,7 @@ class FeedViewModel(
         viewModelScope.launch {
             repository.deleteById(id)
             settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
+            rescheduleFeedAlert()
         }
     }
 
@@ -334,12 +374,17 @@ class FeedViewModel(
 
     class Factory(
         private val repository: FeedRepository,
-        private val settingsRepository: SettingsRepository
+        private val settingsRepository: SettingsRepository,
+        private val feedAlertCoordinator: FeedAlertCoordinator
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(FeedViewModel::class.java)) {
-                return FeedViewModel(repository, settingsRepository) as T
+                return FeedViewModel(
+                    repository = repository,
+                    settingsRepository = settingsRepository,
+                    feedAlertCoordinator = feedAlertCoordinator
+                ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

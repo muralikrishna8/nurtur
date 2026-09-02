@@ -446,12 +446,32 @@ This file is the working knowledge base for future prompts in this repository. U
   - `./gradlew :app:compileDebugKotlin` and targeted unit tests (`domain.service.*`, `presentation.feed.*`) passed.
   - Recommended manual checks: save feed shows next-alert chip; EDIT override persists until next save; Settings quiet hours + push toggles survive process death; light/dark chip and Settings controls remain readable.
 
+
+### Actionable Feed Notifications And Snooze
+
+- Requirement requested:
+  - Caregivers can act on feed alarms from the lock screen with Start Feed, Snooze (15m), and Skip; outside Quiet Hours audio escalates over 60 seconds; Start Feed deep-links into Log Feed with current time pre-filled.
+- What changed:
+  - Added domain policies for alert delivery mode, snooze (+15m), skip (now + interval), escalation volume ramp, and schedule gating on push-enabled + next-alert calculation.
+  - Added `FeedAlertCoordinator` plus `FeedAlertScheduler` port with AlarmManager scheduling, actionable notification (Start Feed / Snooze / Skip), escalating foreground alarm service, and boot reschedule.
+  - Quiet Hours now selects vibrate-only delivery; outside Quiet Hours starts escalating audio over 60 seconds.
+  - `MainActivity` handles Start Feed notification action and opens Log Feed dialog via ViewModel-owned visibility state.
+  - Feed/settings changes reschedule the pending local alert through the coordinator.
+- Constraints/validation rules:
+  - Snooze is exactly 15 minutes from tap time and writes `nextFeedAlertOverrideEpochMillis`.
+  - Skip dismisses the active alarm and reschedules using the configured feed interval from now.
+  - Push disabled cancels scheduled alerts.
+  - Exact alarms use `USE_EXACT_ALARM`; notification permission is requested on Android 13+.
+- Testing impact:
+  - Added unit tests for delivery/snooze/skip/escalation/schedule policies and coordinator behavior.
+  - Extended ViewModel tests for Start Feed deep-link dialog priming.
+  - Recommended manual checks: fire alert outside/inside quiet hours, snooze +15m, skip, Start Feed opens Log Feed with now, reboot preserves schedule.
+
 ## 5) Open Decisions / Next Features
 
-- Full feed alerts delivery story:
-  - Schedule OS alarms/notifications from effective next-alert time
-  - Apply Quiet Hours as vibrate-only delivery
-  - Gate on `pushNotificationsEnabled` and runtime notification permission
+- Actionable notification polish:
+  - Optional custom chime asset instead of system alarm tone
+  - Richer elapsed-interval copy in notification body
 - Phase 2 Firebase Firestore sync:
   - Add remote datasource implementation
   - Keep domain repository contracts stable

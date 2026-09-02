@@ -98,15 +98,18 @@ fun HomeScreen(
     onAmountConsumedChange: (String) -> Unit,
     onMilkTypeChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
-    onNextFeedAlertOverrideChange: (Long) -> Unit
+    onNextFeedAlertOverrideChange: (Long) -> Unit,
+    onShowLogFeedDialog: () -> Unit,
+    onDismissLogFeedDialog: () -> Unit
 ) {
-    var isDialogVisible by remember { mutableStateOf(false) }
     var isNextAlertEditorVisible by remember { mutableStateOf(false) }
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val listState = rememberLazyListState()
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val successColor = if (isDarkTheme) NurturColorTokens.DarkSuccess else NurturColorTokens.LightSuccess
-    val warningColor = if (isDarkTheme) NurturColorTokens.DarkWarning else NurturColorTokens.LightWarning
+    val successColor =
+        if (isDarkTheme) NurturColorTokens.DarkSuccess else NurturColorTokens.LightSuccess
+    val warningColor =
+        if (isDarkTheme) NurturColorTokens.DarkWarning else NurturColorTokens.LightWarning
     val nextAlertEpochMillis = remember(
         uiState.latestFeed?.endTime,
         uiState.settings.targetFeedIntervalMinutes,
@@ -157,7 +160,7 @@ fun HomeScreen(
             FloatingActionButton(
                 onClick = {
                     onStartAddFeed()
-                    isDialogVisible = true
+                    onShowLogFeedDialog()
                 },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -217,7 +220,7 @@ fun HomeScreen(
                     warningColor = warningColor,
                     onClick = {
                         onEditFeed(feed)
-                        isDialogVisible = true
+                        onShowLogFeedDialog()
                     }
                 )
             }
@@ -225,20 +228,20 @@ fun HomeScreen(
         }
     }
 
-    AnimatedVisibility(isDialogVisible) {
+    AnimatedVisibility(uiState.isLogFeedDialogVisible) {
         LogFeedDialog(
             uiState = uiState,
-            onDismiss = { isDialogVisible = false },
+            onDismiss = { onDismissLogFeedDialog() },
             onSave = {
                 val didSave = onSaveFeed()
                 if (didSave) {
-                    isDialogVisible = false
+                    onDismissLogFeedDialog()
                 }
             },
             onDelete = {
                 val didDelete = onDeleteFromEditor()
                 if (didDelete) {
-                    isDialogVisible = false
+                    onDismissLogFeedDialog()
                 }
             },
             onStartTimeChange = onStartTimeChange,
@@ -468,7 +471,8 @@ private fun FeedRow(
     val wasted = FeedMetricsCalculator.calculateWasteMl(feed.amountOffered, feed.amountConsumed)
     val isBreastmilk = feed.milkType.equals(BREASTMILK_TYPE, ignoreCase = true)
     val milkLabel = if (isBreastmilk) "Breast Milk" else "Formula Milk"
-    val feedIcon: ImageVector = if (isBreastmilk) Icons.Default.AutoAwesome else Icons.Default.LocalDrink
+    val feedIcon: ImageVector =
+        if (isBreastmilk) Icons.Default.AutoAwesome else Icons.Default.LocalDrink
     val statusText = if (wasted == 0) "Clean feed" else "$wasted ml wasted"
     val statusColor = if (wasted == 0) successColor else warningColor
 
