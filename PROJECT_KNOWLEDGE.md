@@ -461,11 +461,28 @@ This file is the working knowledge base for future prompts in this repository. U
   - Snooze is exactly 15 minutes from tap time and writes `nextFeedAlertOverrideEpochMillis`.
   - Skip dismisses the active alarm and reschedules using the configured feed interval from now.
   - Push disabled cancels scheduled alerts.
-  - Exact alarms use `USE_EXACT_ALARM`; notification permission is requested on Android 13+.
+  - Exact alarms use `SCHEDULE_EXACT_ALARM` (Android 12+) and `USE_EXACT_ALARM` (Android 13+). If exact scheduling is denied, the scheduler falls back to inexact alarms so startup never crashes.
+  - Notification permission is requested only on Android 13+.
 - Testing impact:
   - Added unit tests for delivery/snooze/skip/escalation/schedule policies and coordinator behavior.
   - Extended ViewModel tests for Start Feed deep-link dialog priming.
   - Recommended manual checks: fire alert outside/inside quiet hours, snooze +15m, skip, Start Feed opens Log Feed with now, reboot preserves schedule.
+
+### Android 12 Startup Crash (Exact Alarm Permission)
+
+- Requirement requested:
+  - App installed on Android 12 closed immediately on launch and never requested permissions.
+- What changed:
+  - Root cause: ViewModel eagerly reschedules feed alerts using `AlarmManager.setExactAndAllowWhileIdle`, which throws `SecurityException` on Android 12 without `SCHEDULE_EXACT_ALARM`.
+  - Declared `SCHEDULE_EXACT_ALARM` in the manifest (kept `USE_EXACT_ALARM` for Android 13+).
+  - Added `ExactAlarmCapability` and hardened `AlarmManagerFeedAlertScheduler` to check `canScheduleExactAlarms()`, catch `SecurityException`, and fall back to inexact alarms.
+  - Wrapped ViewModel reschedule calls in `runCatching` so alert scheduling failures cannot take down the UI process.
+- Constraints/validation rules:
+  - Android 12 does not show a notification-permission dialog (that starts at Android 13). Exact-alarm access is a special app-op / settings grant, not a normal runtime prompt.
+  - Inexact fallback may delay alerts slightly when exact capability is unavailable.
+- Testing impact:
+  - Added `ExactAlarmCapabilityTest`.
+  - Recommended manual check on Android 12: cold start remains open; feed logging works; alerts still schedule (exact when permitted, otherwise inexact).
 
 ### Settings Screen Mockup Alignment
 

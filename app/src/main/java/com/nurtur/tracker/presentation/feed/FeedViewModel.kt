@@ -194,7 +194,9 @@ class FeedViewModel(
 
     private fun rescheduleFeedAlert() {
         viewModelScope.launch {
-            feedAlertCoordinator.rescheduleFromCurrentState()
+            runCatching {
+                feedAlertCoordinator.rescheduleFromCurrentState()
+            }
         }
     }
 

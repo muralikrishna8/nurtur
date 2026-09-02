@@ -22,6 +22,7 @@ Nurtur is an Android baby feeding tracker that helps parents quickly log feeds, 
 - JDK 17
 - Gradle 8.x
 - Android 13+ devices: grant notification permission when prompted for feed alerts
+- Android 12+ devices: if feed reminders drift, allow exact alarms for Nurtur in system settings (app falls back to inexact alarms if denied)
 
 ## Quick Start
 
