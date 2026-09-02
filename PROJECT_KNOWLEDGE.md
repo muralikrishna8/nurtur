@@ -467,6 +467,28 @@ This file is the working knowledge base for future prompts in this repository. U
   - Extended ViewModel tests for Start Feed deep-link dialog priming.
   - Recommended manual checks: fire alert outside/inside quiet hours, snooze +15m, skip, Start Feed opens Log Feed with now, reboot preserves schedule.
 
+### Settings Screen Mockup Alignment
+
+- Requirement requested:
+  - Update Settings to match the new mockup for light and dark themes, keep the feed-interval slider, and keep System alongside Light/Dark in the theme control.
+- What changed:
+  - Rebuilt Settings presentation with left-aligned `Settings` app bar and uppercase section labels (`FEEDING DEFAULTS`, `REMINDERS`, `APPEARANCE`).
+  - Each setting is a Surface-token rounded row (same card fill as Home recent-feed / snapshot cards) with title + subtitle on the left and compact Log-Feed-style background controls on the right.
+  - Default bottle size uses a compact `ml` chip field; default milk type uses Breast/Formula segmented selection.
+  - Feed Interval keeps an intuitive whole-hour slider (`1..12`) with an `Every X.0 hrs` value label.
+  - Push Notifications and Quiet Hours use titled toggles with supporting copy; Quiet Hours shows start/end time chips (`to` separator) when enabled.
+  - App Theme uses a full-width System/Light/Dark segmented control.
+  - Removed the non-interactive Data placeholders section so the screen matches the mockup structure.
+- Constraints/validation rules:
+  - Presentation-only change; Settings persistence and ViewModel validation are unchanged.
+  - Interval remains whole hours `1..12` via Settings -> ViewModel; DataStore still clamps minutes to `30..720`.
+  - Quiet Hours time chips remain tappable Material 3 time pickers; equal start/end still means Quiet Hours inactive.
+  - Theme mode still persists `SYSTEM` / `LIGHT` / `DARK` and resolves through existing `NurturTheme` wiring.
+- Testing impact:
+  - No new domain unit tests required (UI layout/tokens only).
+  - Existing `ThemeResolverTest` remains the theme-resolution regression check.
+  - Recommended manual checks: Settings readability in Light, Dark, and System; interval slider updates overdue timing; Quiet Hours chips open pickers; milk type and bottle size still prefill Log Feed.
+
 ## 5) Open Decisions / Next Features
 
 - Actionable notification polish:

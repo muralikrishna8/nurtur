@@ -57,10 +57,10 @@ gradle :app:assembleDebug
   - Top app bar and inline 7D/14D/30D quick filter chips
   - Last 7 days grouped summary (consumed, wasted, feed count)
 - Settings tab:
-  - Sectioned cards for Feeding Defaults, Reminders, Appearance, and Data (v2 placeholders)
-  - Default bottle size (ml) and segmented default milk type
-  - Reminders: default feed interval slider (hours), push notifications toggle, quiet hours window
-  - Theme segmented control (System/Light/Dark)
+  - Mockup-aligned sections: Feeding Defaults, Reminders, Appearance
+  - Compact default bottle size field and Breast/Formula milk-type segmented control
+  - Reminders: feed-interval slider (1–12 hours) with live “Every X.0 hrs” label, push notifications toggle, quiet hours toggle with start/end time chips
+  - Theme segmented control (System/Light/Dark) with light and dark token surfaces
 - Actionable feed alerts:
   - Local exact alarms with Start Feed / Snooze (15m) / Skip actions
   - Escalating audio outside Quiet Hours (60s); vibrate-only during Quiet Hours
