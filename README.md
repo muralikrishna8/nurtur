@@ -36,6 +36,12 @@ If you prefer CLI and have Gradle available:
 gradle :app:assembleDebug
 ```
 
+## Screenshots
+
+| Home | Analytics | Settings |
+|:---:|:---:|:---:|
+| ![Home](docs/assets/home.png) | ![Analytics](docs/assets/analytics.png) | ![Settings](docs/assets/settings.png) |
+
 ## Current MVP Features
 
 - Home tab with:
