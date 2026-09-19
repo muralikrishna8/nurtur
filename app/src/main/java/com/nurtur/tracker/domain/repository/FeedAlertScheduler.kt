@@ -1,6 +1,6 @@
 package com.nurtur.tracker.domain.repository
 
-import com.nurtur.tracker.domain.service.AlertDeliveryMode
+import com.nurtur.tracker.domain.service.FeedAlertNotification
 
 interface FeedAlertScheduler {
     fun schedule(triggerAtEpochMillis: Long)
@@ -9,5 +9,5 @@ interface FeedAlertScheduler {
 
     fun dismissActiveAlarm()
 
-    fun notifyAlertFired(deliveryMode: AlertDeliveryMode)
+    fun notifyAlertFired(notification: FeedAlertNotification)
 }

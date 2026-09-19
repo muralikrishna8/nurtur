@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feed_alert_title">Time for a feed!</string>
-    <string name="feed_alert_body">It has been 3 hours since the last feed.</string>
+    <string name="feed_alert_body">It has been %1$s since the last feed.</string>
+    <string name="feed_alert_body_unknown">It is time for the next feed.</string>
+    <string name="feed_alert_duration_less_than_one_minute">less than 1 minute</string>
+    <plurals name="feed_alert_duration_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="feed_alert_duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
     <string name="feed_alert_escalating_status">Feed alert sounding</string>
     <string name="feed_alert_action_start_feed">Start Feed</string>
     <string name="feed_alert_action_snooze">Snooze (15m)</string>

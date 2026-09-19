@@ -101,7 +101,15 @@ class FeedAlertCoordinatorTest {
         coordinator.handleAlertFired()
 
         // Assert
-        assertEquals(listOf(AlertDeliveryMode.ESCALATING_AUDIO), scheduler.notifiedModes)
+        assertEquals(
+            listOf(
+                FeedAlertNotification(
+                    deliveryMode = AlertDeliveryMode.ESCALATING_AUDIO,
+                    lastFeedEndEpochMillis = null
+                )
+            ),
+            scheduler.notifiedAlerts
+        )
     }
 
     @Test
@@ -128,7 +136,15 @@ class FeedAlertCoordinatorTest {
         coordinator.handleAlertFired()
 
         // Assert
-        assertEquals(listOf(AlertDeliveryMode.VIBRATE_ONLY), scheduler.notifiedModes)
+        assertEquals(
+            listOf(
+                FeedAlertNotification(
+                    deliveryMode = AlertDeliveryMode.VIBRATE_ONLY,
+                    lastFeedEndEpochMillis = null
+                )
+            ),
+            scheduler.notifiedAlerts
+        )
     }
 
     @Test
@@ -174,6 +190,36 @@ class FeedAlertCoordinatorTest {
         // Assert
         assertEquals(listOf(5_000L + (120 * 60_000L)), scheduler.scheduledTriggers)
         assertEquals(0, scheduler.cancelCalls)
+    }
+
+    @Test
+    fun test_handleAlertFired_includesLastFeedEndTime() = runTest {
+        // Arrange
+        val noonUtc = epochMillisUtc(12, 0)
+        val lastFeedEnd = noonUtc - (3L * 60L * 60_000L)
+        val settingsRepository = FakeSettingsRepository(SettingsState())
+        val scheduler = RecordingFeedAlertScheduler()
+        val coordinator = FeedAlertCoordinator(
+            settingsRepository = settingsRepository,
+            feedRepository = FakeFeedRepository(latest = feed(endTime = lastFeedEnd)),
+            scheduler = scheduler,
+            clock = { noonUtc },
+            timeZone = TimeZone.getTimeZone("UTC")
+        )
+
+        // Act
+        coordinator.handleAlertFired()
+
+        // Assert
+        assertEquals(
+            listOf(
+                FeedAlertNotification(
+                    deliveryMode = AlertDeliveryMode.ESCALATING_AUDIO,
+                    lastFeedEndEpochMillis = lastFeedEnd
+                )
+            ),
+            scheduler.notifiedAlerts
+        )
     }
 
     private fun epochMillisUtc(hourOfDay: Int, minute: Int): Long {
@@ -228,7 +274,7 @@ private class FakeFeedRepository(
 
 private class RecordingFeedAlertScheduler : FeedAlertScheduler {
     val scheduledTriggers = mutableListOf<Long>()
-    val notifiedModes = mutableListOf<AlertDeliveryMode>()
+    val notifiedAlerts = mutableListOf<FeedAlertNotification>()
     var cancelCalls = 0
     var dismissActiveAlarmCalls = 0
 
@@ -244,7 +290,7 @@ private class RecordingFeedAlertScheduler : FeedAlertScheduler {
         dismissActiveAlarmCalls += 1
     }
 
-    override fun notifyAlertFired(deliveryMode: AlertDeliveryMode) {
-        notifiedModes += deliveryMode
+    override fun notifyAlertFired(notification: FeedAlertNotification) {
+        notifiedAlerts += notification
     }
 }

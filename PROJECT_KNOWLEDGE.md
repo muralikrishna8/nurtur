@@ -506,6 +506,22 @@ This file is the working knowledge base for future prompts in this repository. U
   - Existing `ThemeResolverTest` remains the theme-resolution regression check.
   - Recommended manual checks: Settings readability in Light, Dark, and System; interval slider updates overdue timing; Quiet Hours chips open pickers; milk type and bottle size still prefill Log Feed.
 
+### Feed Alert Body Uses Elapsed Time Since Last Feed
+
+- Requirement requested:
+  - Push notification body was hardcoded to "3 hours"; it should reflect time since the last feed.
+- What changed:
+  - Alert fire now loads the latest feed end time and passes it through `FeedAlertNotification`.
+  - Notification body is built from elapsed hours and minutes since last feed end (for example "3 hours", "2 hours 15 minutes", "45 minutes").
+  - Missing last-feed time uses a generic due message instead of claiming a fixed interval.
+- Constraints/validation rules:
+  - Elapsed time is floored to whole minutes and clamped at zero if last feed end is in the future.
+  - Copy still uses the existing "It has been … since the last feed." sentence, with localized hour/minute plurals.
+- Testing impact:
+  - Added `ElapsedSinceLastFeedCalculatorTest` for hour/minute breakdown and missing last feed.
+  - Extended `FeedAlertCoordinatorTest` to assert last feed end is included on fire.
+  - Recommended manual check: change target interval or snooze past due time and confirm the notification duration matches Home "time since last feed".
+
 ### Default Bottle Size Draft Editing
 
 - Requirement requested:
@@ -525,7 +541,6 @@ This file is the working knowledge base for future prompts in this repository. U
 
 - Actionable notification polish:
   - Optional custom chime asset instead of system alarm tone
-  - Richer elapsed-interval copy in notification body
 - Phase 2 Firebase Firestore sync:
   - Add remote datasource implementation
   - Keep domain repository contracts stable

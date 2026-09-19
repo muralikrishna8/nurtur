@@ -6,8 +6,8 @@ import com.nurtur.tracker.domain.model.ThemeMode
 import com.nurtur.tracker.domain.repository.FeedAlertScheduler
 import com.nurtur.tracker.domain.repository.FeedRepository
 import com.nurtur.tracker.domain.repository.SettingsRepository
-import com.nurtur.tracker.domain.service.AlertDeliveryMode
 import com.nurtur.tracker.domain.service.FeedAlertCoordinator
+import com.nurtur.tracker.domain.service.FeedAlertNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -183,5 +183,5 @@ private class NoOpFeedAlertScheduler : FeedAlertScheduler {
     override fun schedule(triggerAtEpochMillis: Long) = Unit
     override fun cancel() = Unit
     override fun dismissActiveAlarm() = Unit
-    override fun notifyAlertFired(deliveryMode: AlertDeliveryMode) = Unit
+    override fun notifyAlertFired(notification: FeedAlertNotification) = Unit
 }

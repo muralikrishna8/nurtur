@@ -32,6 +32,7 @@ class FeedAlertCoordinator(
 
     suspend fun handleAlertFired() {
         val settings = settingsRepository.settingsFlow.first()
+        val latestFeed = feedRepository.observeLatestFeed().first()
         val now = clock()
         val quietHoursActive = QuietHoursPolicy.isActive(
             enabled = settings.quietHoursEnabled,
@@ -40,7 +41,12 @@ class FeedAlertCoordinator(
             endMinutesOfDay = settings.quietHoursEndMinutesOfDay
         )
         val deliveryMode = AlertDeliveryPolicy.resolve(isQuietHoursActive = quietHoursActive)
-        scheduler.notifyAlertFired(deliveryMode)
+        scheduler.notifyAlertFired(
+            FeedAlertNotification(
+                deliveryMode = deliveryMode,
+                lastFeedEndEpochMillis = latestFeed?.endTime
+            )
+        )
     }
 
     suspend fun handleSnooze() {

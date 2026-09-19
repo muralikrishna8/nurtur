@@ -10,6 +10,7 @@ import com.nurtur.tracker.domain.repository.FeedAlertScheduler
 import com.nurtur.tracker.domain.service.AlertDeliveryMode
 import com.nurtur.tracker.domain.service.ExactAlarmCapability
 import com.nurtur.tracker.domain.service.FeedAlertActions
+import com.nurtur.tracker.domain.service.FeedAlertNotification
 
 class AlarmManagerFeedAlertScheduler(
     private val context: Context
@@ -51,9 +52,9 @@ class AlarmManagerFeedAlertScheduler(
         context.stopService(Intent(context, EscalatingAlarmService::class.java))
     }
 
-    override fun notifyAlertFired(deliveryMode: AlertDeliveryMode) {
-        FeedAlertNotifier.showFeedAlert(context, deliveryMode)
-        if (deliveryMode != AlertDeliveryMode.ESCALATING_AUDIO) {
+    override fun notifyAlertFired(notification: FeedAlertNotification) {
+        FeedAlertNotifier.showFeedAlert(context, notification)
+        if (notification.deliveryMode != AlertDeliveryMode.ESCALATING_AUDIO) {
             return
         }
         val serviceIntent = Intent(context, EscalatingAlarmService::class.java)
