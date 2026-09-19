@@ -25,7 +25,9 @@ private val LightScheme = lightColorScheme(
     surfaceVariant = NurturColorTokens.LightSurfaceVariant,
     onSurfaceVariant = NurturColorTokens.LightOnSurfaceVariant,
     error = NurturColorTokens.LightError,
-    onError = NurturColorTokens.LightOnError
+    onError = NurturColorTokens.LightOnError,
+    inverseSurface = NurturColorTokens.DarkSurface,
+    inverseOnSurface = NurturColorTokens.DarkOnSurface
 )
 
 private val DarkScheme = darkColorScheme(
@@ -46,7 +48,9 @@ private val DarkScheme = darkColorScheme(
     surfaceVariant = NurturColorTokens.DarkSurfaceVariant,
     onSurfaceVariant = NurturColorTokens.DarkOnSurfaceVariant,
     error = NurturColorTokens.DarkError,
-    onError = NurturColorTokens.DarkOnError
+    onError = NurturColorTokens.DarkOnError,
+    inverseSurface = NurturColorTokens.LightSurface,
+    inverseOnSurface = NurturColorTokens.LightOnSurface
 )
 
 @Composable

@@ -521,6 +521,24 @@ This file is the working knowledge base for future prompts in this repository. U
   - Added `ElapsedSinceLastFeedCalculatorTest` for hour/minute breakdown and missing last feed.
   - Extended `FeedAlertCoordinatorTest` to assert last feed end is included on fire.
   - Recommended manual check: change target interval or snooze past due time and confirm the notification duration matches Home "time since last feed".
+  - Extracted shared `DurationLabelFormatter` (hours/minutes -> localized string) used by both the notification body and the new Home "next alert" toast below, and renamed the backing plural/string resources from `feed_alert_duration_*` to generic `duration_*` names.
+
+### Next Feed Alert Toast Shows Relative Time On Manual Override
+
+- Requirement requested:
+  - When a caregiver manually sets the next alert time from Home, show a toast like "Alert is set for x hours y minutes from now." so they know the relative time.
+- What changed:
+  - Added `NextAlertCountdownCalculator` (pure domain function) that computes hours/minutes remaining between now and a target epoch, clamped at zero if the target is already in the past.
+  - `HomeScreen`'s `NextAlertTimePickerDialog` confirm handler now shows a Material 3 snackbar built from `next_alert_toast_message` ("Alert is set for %1$s from now.") using the shared `DurationLabelFormatter` for the duration text, in addition to persisting the override as before.
+  - The snackbar uses `inverseSurface` / `inverseOnSurface` from `NurturTheme` so contrast follows the in-app Light/Dark/System setting rather than a system `Toast`, which ignores Compose theme.
+- Constraints/validation rules:
+  - Countdown is floored to whole minutes and clamped at zero (never shows a negative duration).
+  - Toast/snackbar text reuses the same hour/minute pluralization as the feed alert notification body for consistency.
+  - Light inverse colors are the dark surface pair; dark inverse colors are the light surface pair.
+  - This is presentation-layer only; no change to how the override epoch is persisted or scheduled.
+- Testing impact:
+  - Added `NextAlertCountdownCalculatorTest` covering whole hours, hours+minutes, minutes-only, and past-target (clamped to zero) cases.
+  - Snackbar display itself is Android-runtime UI and isn't covered by JVM unit tests (consistent with other Compose-only code in `HomeScreen.kt`); recommended manual check: set next alert in Light and Dark (including app Dark while system is Light) and confirm the banner remains readable.
 
 ### Default Bottle Size Draft Editing
 

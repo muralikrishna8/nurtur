@@ -10,10 +10,10 @@ import androidx.core.app.NotificationManagerCompat
 import com.nurtur.tracker.MainActivity
 import com.nurtur.tracker.R
 import com.nurtur.tracker.domain.service.AlertDeliveryMode
-import com.nurtur.tracker.domain.service.ElapsedSinceLastFeed
 import com.nurtur.tracker.domain.service.ElapsedSinceLastFeedCalculator
 import com.nurtur.tracker.domain.service.FeedAlertActions
 import com.nurtur.tracker.domain.service.FeedAlertNotification
+import com.nurtur.tracker.util.DurationLabelFormatter
 
 object FeedAlertNotifier {
     const val CHANNEL_ID_ESCALATING = "feed_alerts_escalating"
@@ -134,28 +134,8 @@ object FeedAlertNotifier {
         if (elapsed == null) {
             return context.getString(R.string.feed_alert_body_unknown)
         }
-        return context.getString(R.string.feed_alert_body, durationLabel(context, elapsed))
-    }
-
-    private fun durationLabel(context: Context, elapsed: ElapsedSinceLastFeed): String {
-        if (elapsed.hours <= 0 && elapsed.minutes <= 0) {
-            return context.getString(R.string.feed_alert_duration_less_than_one_minute)
-        }
-        val hoursLabel = elapsed.hours.takeIf { it > 0 }?.let { hours ->
-            context.resources.getQuantityString(
-                R.plurals.feed_alert_duration_hours,
-                hours,
-                hours
-            )
-        }
-        val minutesLabel = elapsed.minutes.takeIf { it > 0 }?.let { minutes ->
-            context.resources.getQuantityString(
-                R.plurals.feed_alert_duration_minutes,
-                minutes,
-                minutes
-            )
-        }
-        return listOfNotNull(hoursLabel, minutesLabel).joinToString(" ")
+        val durationLabel = DurationLabelFormatter.format(context, elapsed.hours, elapsed.minutes)
+        return context.getString(R.string.feed_alert_body, durationLabel)
     }
 
     private const val REQUEST_CONTENT = 501

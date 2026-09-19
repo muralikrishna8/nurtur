@@ -32,6 +32,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -41,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,12 +59,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.nurtur.tracker.R
 import com.nurtur.tracker.domain.model.FeedLog
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import com.nurtur.tracker.domain.service.FeedTimerStatus
 import com.nurtur.tracker.domain.service.FeedTimerStatusCalculator
+import com.nurtur.tracker.domain.service.NextAlertCountdownCalculator
 import com.nurtur.tracker.domain.service.NextFeedAlertCalculator
+import com.nurtur.tracker.util.DurationLabelFormatter
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.TimePicker
@@ -76,6 +85,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val TIMER_REFRESH_MS = 60_000L
 private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
@@ -105,6 +115,9 @@ fun HomeScreen(
     var isNextAlertEditorVisible by remember { mutableStateOf(false) }
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val successColor =
         if (isDarkTheme) NurturColorTokens.DarkSuccess else NurturColorTokens.LightSuccess
@@ -132,6 +145,15 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -260,6 +282,11 @@ fun HomeScreen(
             onDismiss = { isNextAlertEditorVisible = false },
             onConfirm = { selectedEpochMillis ->
                 onNextFeedAlertOverrideChange(selectedEpochMillis)
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        nextAlertSetMessage(context, selectedEpochMillis)
+                    )
+                }
                 isNextAlertEditorVisible = false
             }
         )
@@ -668,6 +695,15 @@ private fun NextAlertTimePickerDialog(
             }
         }
     )
+}
+
+private fun nextAlertSetMessage(context: Context, targetEpochMillis: Long): String {
+    val countdown = NextAlertCountdownCalculator.calculate(
+        targetEpochMillis = targetEpochMillis,
+        nowEpochMillis = System.currentTimeMillis()
+    )
+    val durationLabel = DurationLabelFormatter.format(context, countdown.hours, countdown.minutes)
+    return context.getString(R.string.next_alert_toast_message, durationLabel)
 }
 
 internal fun resolveOverrideEpochMillis(
