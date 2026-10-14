@@ -88,8 +88,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val TIMER_REFRESH_MS = 60_000L
+private const val MILLIS_PER_MINUTE = 60_000L
+private const val MINUTES_PER_HOUR = 60
 private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
 private const val BREASTMILK_TYPE = "Breastmilk"
+private const val SUB_MINUTE_DURATION_LABEL = "< 1 min"
 private val timeOnlyFormatter = DateTimeFormatter.ofPattern("h:mm a")
 private val dayTimeFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a")
 
@@ -545,12 +548,20 @@ private fun FeedRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = "${feed.amountConsumed} ml",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = formatConsumedDurationLabel(feed.startTime, feed.endTime),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -574,6 +585,26 @@ private fun FeedRow(
             }
         }
     }
+}
+
+internal fun formatConsumedDurationLabel(
+    startEpochMillis: Long,
+    endEpochMillis: Long
+): String {
+    val elapsedMillis = (endEpochMillis - startEpochMillis).coerceAtLeast(0L)
+    val totalMinutes = (elapsedMillis / MILLIS_PER_MINUTE).toInt()
+    if (totalMinutes <= 0) {
+        return SUB_MINUTE_DURATION_LABEL
+    }
+    val hours = totalMinutes / MINUTES_PER_HOUR
+    val minutes = totalMinutes % MINUTES_PER_HOUR
+    if (hours <= 0) {
+        return "$minutes min"
+    }
+    if (minutes == 0) {
+        return "$hours hr"
+    }
+    return "$hours hr $minutes min"
 }
 
 private fun formatRelativeFeedTime(epochMillis: Long): String {

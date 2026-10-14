@@ -585,6 +585,20 @@ This file is the working knowledge base for future prompts in this repository. U
   - Added `FullScreenAlertCapabilityTest` for pre-Android 14, Android 14 denied, and Android 14 granted cases.
   - Recommended manual check: lock the device, fire an alert, confirm the screen turns on, then Snooze and Skip from both the full-screen UI and the notification actions.
 
+### Consumed Duration on Recent Feeds
+
+- Requirement requested:
+  - Recent Feeds rows should show how long the baby consumed, under the consumed amount, matching the feed-list mockup (`18 min` under `120 ml`).
+- What changed:
+  - Each Recent Feeds row now shows consumed duration between the consumed volume and the clean/wasted status.
+  - Duration is `endTime - startTime`, floored to whole minutes, and rendered in compact form (`18 min`, `1 hr 30 min`).
+  - Sessions shorter than one minute render as `< 1 min`.
+- Constraints/validation rules:
+  - A negative gap (end before start) is clamped to zero and shown as `< 1 min`.
+  - Partial minutes are dropped; the label does not round up.
+- Testing impact:
+  - Added `formatConsumedDurationLabel` unit coverage for sub-minute, minute, hour, and inverted time ranges.
+
 ## 5) Open Decisions / Next Features
 
 - Actionable notification polish:
