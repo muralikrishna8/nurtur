@@ -22,6 +22,7 @@ Nurtur is an Android baby feeding tracker that helps parents quickly log feeds, 
 - JDK 17
 - Gradle 8.x
 - Android 13+ devices: grant notification permission when prompted for feed alerts
+- Android 14+ devices: keep “full screen notifications” allowed for Nurtur so feed alerts can wake a locked screen
 - Android 12+ devices: if feed reminders drift, allow exact alarms for Nurtur in system settings (app falls back to inexact alarms if denied)
 
 ## Quick Start
@@ -70,8 +71,9 @@ gradle :app:assembleDebug
   - Theme segmented control (System/Light/Dark) with light and dark token surfaces
 - Actionable feed alerts:
   - Local exact alarms with Start Feed / Snooze (15m) / Skip actions
+  - Locked-device alerts wake the screen and show a full-screen alarm with the same actions
   - Escalating audio outside Quiet Hours (60s); vibrate-only during Quiet Hours
-  - Start Feed opens Log Feed with current time pre-filled
+  - Start Feed opens Log Feed with current time pre-filled; Snooze and Skip can run from the lock screen without unlocking
 - Home next-alert chip:
   - Shows calculated next feed alert after a feed is logged
   - Inline EDIT overrides the upcoming alert only (does not change the global interval)
@@ -101,3 +103,4 @@ When adding or changing a feature, update both:
 
 - **Gradle command not found:** use Android Studio bundled Gradle, or install Gradle locally.
 - **SDK mismatch errors:** confirm Android SDK 34 and JDK 17 are selected in Android Studio.
+- **Locked-screen feed alert does not turn the display on:** on Android 14+, open system settings for Nurtur and allow full-screen notifications.

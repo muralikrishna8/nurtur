@@ -555,6 +555,23 @@ This file is the working knowledge base for future prompts in this repository. U
   - Added `FeedViewModelTest` coverage for valid persist and ignore-empty/below-minimum paths.
   - Recommended manual check: clear `150`, type `180`, confirm field does not jump to `30` mid-edit.
 
+### Lock Screen Feed Alert Wake And Actions
+
+- Requirement requested:
+  - When a feed alert fires on a locked device, the screen should wake so the caregiver can Skip or Snooze without unlocking.
+- What changed:
+  - Feed alert notifications now use a public lock-screen visibility, a high-importance quiet-hours channel, and a full-screen intent to `FeedAlertLockScreenActivity` (show-when-locked + turn-screen-on).
+  - Snooze and Skip notification actions are marked as background (`setShowsUserInterface(false)`) so they can run from the lock screen without opening UI.
+  - The lock-screen activity exposes Start Feed, Snooze (15m), and Skip; Start Feed dismisses the keyguard then opens Log Feed. Dismissing the alarm also closes the lock-screen activity.
+  - Declared `USE_FULL_SCREEN_INTENT` and `TURN_SCREEN_ON`. Full-screen intent is omitted on Android 14+ when the OS has revoked that app-op.
+- Constraints/validation rules:
+  - Snooze/Skip still use the existing coordinator policies (15 minutes vs now + interval) and do not require unlock.
+  - Start Feed still requires unlocking when the keyguard is secure.
+  - Quiet Hours remains vibrate-only (no chime) but can still wake the display.
+- Testing impact:
+  - Added `FullScreenAlertCapabilityTest` for pre-Android 14, Android 14 denied, and Android 14 granted cases.
+  - Recommended manual check: lock the device, fire an alert, confirm the screen turns on, then Snooze and Skip from both the full-screen UI and the notification actions.
+
 ## 5) Open Decisions / Next Features
 
 - Actionable notification polish:
