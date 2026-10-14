@@ -65,4 +65,28 @@ class AnalyticsPeriodStatsTest {
         assertEquals("4.0 / day", formatFeedsPerDay(4.0f))
         assertEquals("4.4 / day", formatFeedsPerDay(4.4f))
     }
+
+    @Test
+    fun test_formatSelectedDaySummary_includesFeedCount() {
+        // Arrange
+        val day = DailyAnalytics(dayLabel = "Wed", consumedMl = 180, wastedMl = 20, feedCount = 4)
+
+        // Act
+        val result = formatSelectedDaySummary(day)
+
+        // Assert
+        assertEquals("Wed: Consumed 180ml, Wasted 20ml, Feeds 4", result)
+    }
+
+    @Test
+    fun test_formatSelectedDaySummary_zeroFeeds_showsZero() {
+        // Arrange
+        val day = DailyAnalytics(dayLabel = "Sun", consumedMl = 0, wastedMl = 0, feedCount = 0)
+
+        // Act
+        val result = formatSelectedDaySummary(day)
+
+        // Assert
+        assertEquals("Sun: Consumed 0ml, Wasted 0ml, Feeds 0", result)
+    }
 }

@@ -591,7 +591,7 @@ private fun ChartCard(
 
             selectedDay?.let { day ->
                 Text(
-                    text = "${day.dayLabel}: Consumed ${day.consumedMl}ml, Wasted ${day.wastedMl}ml",
+                    text = formatSelectedDaySummary(day),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -857,6 +857,11 @@ internal fun formatMlPerDay(mlPerDay: Int): String {
 
 internal fun formatFeedsPerDay(feedsPerDay: Float): String {
     return String.format(Locale.US, "%.1f / day", feedsPerDay.coerceAtLeast(0f))
+}
+
+internal fun formatSelectedDaySummary(day: DailyAnalytics): String {
+    val feedCount = day.feedCount.coerceAtLeast(0)
+    return "${day.dayLabel}: Consumed ${day.consumedMl}ml, Wasted ${day.wastedMl}ml, Feeds $feedCount"
 }
 
 private fun computeAxisMax(maxValueMl: Int): Int {

@@ -384,6 +384,19 @@ This file is the working knowledge base for future prompts in this repository. U
   - Presentation-only change; domain/unit tests unchanged.
   - Recommended manual verification of light and dark Home states for badge colors, wasted highlighting, and FAB placement.
 
+### Selected Day Feed Count on Analytics Chart
+
+- Requirement requested:
+  - When a day is selected on the Analytics bar chart, also show how many feeds occurred that day.
+- What changed:
+  - Selected-day breakdown text now includes the day's feed count: `Day: Consumed Xml, Wasted Yml, Feeds N`.
+  - Feed count comes from the existing `DailyAnalytics.feedCount` for the tapped bar.
+- Constraints/validation rules:
+  - Displayed feed count is clamped at zero so a negative stored count cannot render.
+  - Consumed and wasted values keep their existing display (not re-clamped in this line).
+- Testing impact:
+  - Added `formatSelectedDaySummary` unit coverage for a day with feeds and a zero-feed day.
+
 ### Analytics Mockup Alignment (Consumed vs Wasted + Period Stats)
 
 - Requirement requested:
