@@ -65,7 +65,10 @@ gradle :app:assembleDebug
   - Top app bar and inline 7D/14D/30D quick filter chips
   - Last 7 days grouped summary (consumed, wasted, feed count)
 - Settings tab:
-  - Mockup-aligned sections: Feeding Defaults, Reminders, Appearance
+  - Mockup-aligned sections: Feeding Defaults, Reminders, Appearance, Data & System
+  - Export downloads the full feed history as a CSV named `nurtur_<start-date>_<end-date>-data.csv` (dates in `DD-MM-YYYY`)
+  - Import accepts a `.csv` file only, adds those feeds, and shows a success or error toast
+  - On Android 8 and 9, export asks for storage access so the file can be saved to Downloads
   - Compact default bottle size field and Breast/Formula milk-type segmented control
   - Reminders: feed-interval slider (1–12 hours) with live “Every X.0 hrs” label, push notifications toggle, quiet hours toggle with start/end time chips
   - Theme segmented control (System/Light/Dark) with light and dark token surfaces

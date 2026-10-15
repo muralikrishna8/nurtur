@@ -13,6 +13,11 @@
         <item quantity="other">%d minutes</item>
     </plurals>
     <string name="next_alert_toast_message">Alert is set for %1$s from now.</string>
+    <string name="feed_export_success">Feed history saved to Downloads.</string>
+    <string name="feed_export_error">Couldn\'t save the feed history file.</string>
+    <string name="feed_import_success">Feed history imported.</string>
+    <string name="feed_import_error">Couldn\'t import feed data. Use a Nurtur CSV file.</string>
+    <string name="feed_import_not_csv">Only CSV files can be imported.</string>
     <string name="feed_alert_escalating_status">Feed alert sounding</string>
     <string name="feed_alert_action_start_feed">Start Feed</string>
     <string name="feed_alert_action_snooze">Snooze (15m)</string>

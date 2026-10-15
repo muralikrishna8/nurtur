@@ -1,10 +1,17 @@
 package com.nurtur.tracker.presentation.screen
 
+import android.Manifest
+import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,14 +27,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -60,11 +72,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.nurtur.tracker.R
 import com.nurtur.tracker.domain.model.SettingsState
 import com.nurtur.tracker.domain.model.ThemeMode
+import com.nurtur.tracker.domain.service.FeedCsvDocument
+import com.nurtur.tracker.infrastructure.export.FeedCsvDownloads
+import com.nurtur.tracker.infrastructure.export.FeedCsvReadResult
 import com.nurtur.tracker.presentation.theme.NurturColorTokens
 import com.nurtur.tracker.presentation.theme.NurturDimens
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import android.content.pm.PackageManager
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -79,6 +103,13 @@ private const val FORMULA_TYPE = "Formula"
 private val quietHoursTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 private val settingCardShape = RoundedCornerShape(NurturDimens.CardCornerRadius)
 private val compactControlShape = RoundedCornerShape(12.dp)
+private val dataTransferButtonShape = RoundedCornerShape(percent = 50)
+private val csvMimeTypes = arrayOf(
+    "text/csv",
+    "text/comma-separated-values",
+    "application/csv",
+    "application/vnd.ms-excel"
+)
 
 private enum class QuietHoursPickerTarget {
     START,
@@ -97,10 +128,112 @@ fun SettingsScreen(
     onPushNotificationsEnabledChange: (Boolean) -> Unit,
     onQuietHoursEnabledChange: (Boolean) -> Unit,
     onQuietHoursStartMinutesChange: (Int) -> Unit,
-    onQuietHoursEndMinutesChange: (Int) -> Unit
+    onQuietHoursEndMinutesChange: (Int) -> Unit,
+    onExportFeedHistory: suspend () -> FeedCsvDocument,
+    onImportFeedHistory: suspend (String) -> Boolean
 ) {
     val listState = rememberLazyListState()
     var quietHoursPickerTarget by remember { mutableStateOf<QuietHoursPickerTarget?>(null) }
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var isTransferInProgress by remember { mutableStateOf(false) }
+
+    fun showTransferMessage(messageRes: Int) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(context.getString(messageRes))
+        }
+    }
+
+    fun startExport() {
+        if (isTransferInProgress) {
+            return
+        }
+        isTransferInProgress = true
+        coroutineScope.launch {
+            val messageRes = try {
+                val document = onExportFeedHistory()
+                val saved = withContext(Dispatchers.IO) {
+                    FeedCsvDownloads.save(context, document)
+                }
+                if (saved) R.string.feed_export_success else R.string.feed_export_error
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                R.string.feed_export_error
+            } finally {
+                isTransferInProgress = false
+            }
+            snackbarHostState.showSnackbar(context.getString(messageRes))
+        }
+    }
+
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startExport()
+        } else {
+            showTransferMessage(R.string.feed_export_error)
+        }
+    }
+
+    fun startImport(uri: Uri) {
+        if (isTransferInProgress) {
+            return
+        }
+        isTransferInProgress = true
+        coroutineScope.launch {
+            val messageRes = try {
+                val readResult = withContext(Dispatchers.IO) {
+                    FeedCsvDownloads.read(context, uri)
+                }
+                when (readResult) {
+                    FeedCsvReadResult.NotCsv -> R.string.feed_import_not_csv
+                    FeedCsvReadResult.Unreadable -> R.string.feed_import_error
+                    is FeedCsvReadResult.Text -> {
+                        if (onImportFeedHistory(readResult.value)) {
+                            R.string.feed_import_success
+                        } else {
+                            R.string.feed_import_error
+                        }
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                R.string.feed_import_error
+            } finally {
+                isTransferInProgress = false
+            }
+            snackbarHostState.showSnackbar(context.getString(messageRes))
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) {
+            return@rememberLauncherForActivityResult
+        }
+        startImport(uri)
+    }
+
+    fun onExportClick() {
+        if (isTransferInProgress) {
+            return
+        }
+        val needsLegacyStoragePermission = Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+        val storageGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        if (needsLegacyStoragePermission && !storageGranted) {
+            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            return
+        }
+        startExport()
+    }
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val inputBackgroundColor = if (isDarkTheme) {
         NurturColorTokens.DarkBackground
@@ -111,6 +244,15 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -269,6 +411,43 @@ fun SettingsScreen(
                             inactiveContainerColor = inputBackgroundColor
                         )
                     }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                SettingsSectionHeader(title = "DATA & SYSTEM")
+            }
+            item {
+                SettingsSettingCard {
+                    SettingsLabeledControlRow(
+                        title = "Export Feed Data",
+                        subtitle = "Save feed history as a CSV file",
+                        control = {
+                            DataTransferButton(
+                                label = "Export",
+                                contentDescription = "Export feed data",
+                                enabled = !isTransferInProgress,
+                                onClick = ::onExportClick
+                            )
+                        }
+                    )
+                }
+            }
+            item {
+                SettingsSettingCard {
+                    SettingsLabeledControlRow(
+                        title = "Import Feed Data",
+                        subtitle = "Load feed history from a CSV file",
+                        control = {
+                            DataTransferButton(
+                                label = "Import",
+                                contentDescription = "Import feed data",
+                                enabled = !isTransferInProgress,
+                                onClick = { importLauncher.launch(csvMimeTypes) }
+                            )
+                        }
+                    )
                 }
             }
 
@@ -679,6 +858,38 @@ private fun formatMinutesOfDay(minutesOfDay: Int): String {
     return quietHoursTimeFormatter.format(
         LocalTime.of(safeMinutes / MINUTES_PER_HOUR, safeMinutes % MINUTES_PER_HOUR)
     )
+}
+
+@Composable
+private fun DataTransferButton(
+    label: String,
+    contentDescription: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = dataTransferButtonShape,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            disabledContainerColor = MaterialTheme.colorScheme.background,
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        ),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+        modifier = Modifier.semantics { this.contentDescription = contentDescription }
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
 }
 
 private fun ThemeMode.toDisplayLabel(): String {

@@ -599,6 +599,27 @@ This file is the working knowledge base for future prompts in this repository. U
 - Testing impact:
   - Added `formatConsumedDurationLabel` unit coverage for sub-minute, minute, hour, and inverted time ranges.
 
+### Feed History CSV Export And Import
+
+- Requirement requested:
+  - From Settings, export all feed history as a CSV download named `nurtur_<starting-date>_<end-date>-data.csv` with dates in `DD-MM-YYYY`, and import a CSV file only, with a success toast when import works and an error toast when it fails.
+- What changed:
+  - Settings gained a Data & System section with Export Feed Data and Import Feed Data rows matching the pill-button layout.
+  - Export writes every stored feed to Downloads. The file name uses the earliest and latest feed instants in the device time zone; an empty history uses today's date for both.
+  - Import opens a CSV-only document picker, rejects other file types, validates the Nurtur CSV schema, and inserts feeds that are not already stored.
+  - Import shows "Feed history imported." on success and an error toast when the file is not a CSV or cannot be read as a valid Nurtur export. Cancelling the picker shows no toast.
+- Constraints/validation rules:
+  - CSV columns are `start_time`, `end_time`, `amount_offered_ml`, `amount_consumed_ml`, `milk_type`, `notes`. Times are ISO-8601 offsets so the original instants round-trip.
+  - A file is accepted only when its display name ends in `.csv`, or when the name is missing and the MIME type is a CSV type.
+  - Import fails the whole file when any row is invalid: end before start, offered outside `1..1000`, consumed outside `0..offered`, milk type other than Breastmilk/Formula, notes longer than 280 characters, or more than 10,000 data rows / 2,000,000 characters. A header-only file is rejected because it has no feed rows.
+  - Imported rows are inserted as new records (`id` 0, `remoteId` null). Rows that match an existing feed on time, amounts, milk type, and notes are skipped. Local feeds missing from the file are kept.
+  - Spreadsheet formula prefixes in notes (`=`, `+`, `-`, `@`) are neutralized on export and restored on import.
+  - Android 10+ saves through MediaStore Downloads with no storage permission. Android 8 and 9 request `WRITE_EXTERNAL_STORAGE` (max SDK 28) before writing to public Downloads.
+- Testing impact:
+  - Added `FeedCsvCodecTest` for file names, round-trip, formula notes, invalid rows, duplicate skipping, and CSV name/MIME checks.
+  - Added `FeedViewModelTest` coverage for export of stored feeds, successful import, duplicate skip, and rejected CSV with no insert.
+  - Download, picker, and toast UI are device-level. Recommended manual check: export from Settings, confirm the Downloads file name and contents, import that CSV (success toast, no duplicate rows), then import a non-CSV and a broken CSV (error toasts).
+
 ## 5) Open Decisions / Next Features
 
 - Actionable notification polish:

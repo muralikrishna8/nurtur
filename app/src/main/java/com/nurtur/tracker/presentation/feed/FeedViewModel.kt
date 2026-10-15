@@ -11,11 +11,16 @@ import com.nurtur.tracker.domain.model.ThemeMode
 import com.nurtur.tracker.domain.repository.FeedRepository
 import com.nurtur.tracker.domain.repository.SettingsRepository
 import com.nurtur.tracker.domain.service.FeedAlertCoordinator
+import com.nurtur.tracker.domain.service.FeedCsvCodec
+import com.nurtur.tracker.domain.service.FeedCsvDocument
+import com.nurtur.tracker.domain.service.FeedCsvExportRequest
+import com.nurtur.tracker.domain.service.FeedCsvParseResult
 import com.nurtur.tracker.domain.service.FeedMetricsCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -372,6 +377,31 @@ class FeedViewModel(
             settingsRepository.updateNextFeedAlertOverrideEpochMillis(null)
             rescheduleFeedAlert()
         }
+    }
+
+    suspend fun exportFeedHistory(): FeedCsvDocument {
+        val feeds = repository.observeAllFeeds().first()
+        return FeedCsvCodec.export(
+            FeedCsvExportRequest(
+                feeds = feeds,
+                zoneId = zoneId,
+                today = LocalDate.now(zoneId)
+            )
+        )
+    }
+
+    suspend fun importFeedHistory(csvText: String): Boolean {
+        val parsed = FeedCsvCodec.parse(csvText)
+        if (parsed !is FeedCsvParseResult.Ready) {
+            return false
+        }
+        val existing = repository.observeAllFeeds().first()
+        val novelFeeds = FeedCsvCodec.feedsNotAlreadyStored(existing, parsed.feeds)
+        if (novelFeeds.isNotEmpty()) {
+            repository.insertAll(novelFeeds)
+            rescheduleFeedAlert()
+        }
+        return true
     }
 
     private fun isToday(epochMillis: Long): Boolean {

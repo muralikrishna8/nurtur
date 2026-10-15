@@ -269,6 +269,7 @@ private class FakeFeedRepository(
     override fun observeFeedsInRange(startMillis: Long, endMillis: Long): Flow<List<FeedLog>> = flowOf(emptyList())
     override fun observeAllFeeds(): Flow<List<FeedLog>> = flowOf(emptyList())
     override suspend fun insert(feedLog: FeedLog): Long = 0L
+    override suspend fun insertAll(feedLogs: List<FeedLog>) = Unit
     override suspend fun deleteById(id: Long) = Unit
 }
 

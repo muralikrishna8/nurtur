@@ -124,7 +124,9 @@ fun NurturApp(viewModel: FeedViewModel) {
                     onPushNotificationsEnabledChange = viewModel::updatePushNotificationsEnabled,
                     onQuietHoursEnabledChange = viewModel::updateQuietHoursEnabled,
                     onQuietHoursStartMinutesChange = viewModel::updateQuietHoursStartMinutesOfDay,
-                    onQuietHoursEndMinutesChange = viewModel::updateQuietHoursEndMinutesOfDay
+                    onQuietHoursEndMinutesChange = viewModel::updateQuietHoursEndMinutesOfDay,
+                    onExportFeedHistory = viewModel::exportFeedHistory,
+                    onImportFeedHistory = viewModel::importFeedHistory
                 )
             }
         }

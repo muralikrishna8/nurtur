@@ -9,5 +9,6 @@ interface FeedRepository {
     fun observeFeedsInRange(startMillis: Long, endMillis: Long): Flow<List<FeedLog>>
     fun observeAllFeeds(): Flow<List<FeedLog>>
     suspend fun insert(feedLog: FeedLog): Long
+    suspend fun insertAll(feedLogs: List<FeedLog>)
     suspend fun deleteById(id: Long)
 }

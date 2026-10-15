@@ -25,5 +25,16 @@ class LocalFeedRepository(
 
     override suspend fun insert(feedLog: FeedLog): Long = feedDao.insert(feedLog.toEntity())
 
+    override suspend fun insertAll(feedLogs: List<FeedLog>) {
+        if (feedLogs.isEmpty()) {
+            return
+        }
+        feedDao.insertAll(
+            feedLogs.map { feedLog ->
+                feedLog.copy(id = 0L, remoteId = null).toEntity()
+            }
+        )
+    }
+
     override suspend fun deleteById(id: Long) = feedDao.deleteById(id)
 }
